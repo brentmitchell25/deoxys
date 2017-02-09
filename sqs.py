@@ -1,4 +1,5 @@
-from troposphere.sqs import Queue, QueuePolicy
+from troposphere.sqs import Queue, RedrivePolicy
+from troposphere import Ref, Join
 
 
 def sqs(item, template, defaults):
@@ -14,6 +15,15 @@ def sqs(item, template, defaults):
                     queue[
                         'MessageRetentionPeriod']) if 'MessageRetentionPeriod' in queue else defaults[
                     'MessageRetentionPeriod'],
+                DelaySeconds=str(
+                    queue['DelaySeconds']) if 'DelaySeconds' in queue else Ref('AWS::NoValue'),
+                RedrivePolicy=RedrivePolicy(
+                    deadLetterTargetArn=Join("", ["arn:aws:sqs", ":", Ref("AWS::AccountId"), ":", queue['DeadLetterQueue']['Name']]),
+                    maxReceiveCount=int(queue['DeadLetterQueue']['MaxReceiveCount'] if 'MaxReceiveCount' in queue['DeadLetterQueue'] else
+                    defaults['MaxReceiveCount'])
+                ) if 'DeadLetterQueue' in queue else Ref('AWS::NoValue'),
+                VisibilityTimeout=str(
+                    queue['VisibilityTimeout']) if 'VisibilityTimeout' in queue else Ref('AWS::NoValue'),
             )
             template.add_resource(resource)
     return template
