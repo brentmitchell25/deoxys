@@ -2,15 +2,14 @@ from awslambda import awslambda
 from sqs import sqs
 from sns import sns
 from s3 import s3
-from troposphere import FindInMap, GetAtt, Join, Output
+from kms import kms
+from iam import iam
 from troposphere import Parameter, Ref, Template
 from boto3.dynamodb.conditions import Key, Attr
 import boto3
 import yaml
 import json
 import configparser
-import sys
-import pickle
 
 # Environment Variables
 
@@ -22,7 +21,7 @@ dynamodb = boto3.resource('dynamodb')
 t = Template()
 
 t.add_version("2010-09-09")
-applicationName = "test"
+applicationName = "SFTP"
 protocols = dynamodb.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
@@ -36,5 +35,12 @@ for item in protocols['Items']:
         t = sns(item, t, defaults=config)
     if item['Protocol'] == 's3':
         t = s3(item, t, defaults=config)
+    if item['Protocol'] == "kms":
+        t = kms(item, t, defaults=config)
+    if item['Protocol'] == "iam":
+        iamTemplate = Template()
+        iamTemplate.add_version("2010-09-09")
+        iamTemplate = iam(item, t, defaults=config)
+
 
 print(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))

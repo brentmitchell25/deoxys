@@ -23,7 +23,7 @@ def awslambda(item, template, defaults):
             resource = Function(
                 function['FunctionName'].replace('_', '') + item['Protocol'],
                 FunctionName=function['FunctionName'],
-                Description=function['Description'] if 'Description' in function else '',
+                Description=function['Description'] if 'Description' in function else Ref('AWS::NoValue'),
                 Code=code,
                 Handler=function['Handler'] if 'Handler' in function else 'index.handler',
                 Environment=Environment(

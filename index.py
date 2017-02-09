@@ -1,10 +1,11 @@
-from troposphere.constants import NUMBER
 from awslambda import awslambda
 from sqs import sqs
 from sns import sns
 from s3 import s3
-from troposphere import Parameter, Ref, Template
-from boto3.dynamodb.conditions import Key, Attr
+from kms import kms
+from iam import iam
+from troposphere import Template
+from boto3.dynamodb.conditions import Key
 from cStringIO import StringIO
 import awacs.sqs as sqs
 import configparser
@@ -12,14 +13,15 @@ import boto3
 import yaml
 import json
 import sys
-import pickle
+import os
 
 # Environment Variables
-receiveMessageWaitTimeSeconds = 20
-messageRetentionPeriod = 604800
-
 config = configparser.ConfigParser()
-config.read('defaults.ini')
+if os.path.exists("defaults.ini"):
+    config.read('defaults.ini')
+else:
+    config.read('default.ini')
+
 config = config['DEFAULT']
 
 dynamodb = boto3.resource('dynamodb')
@@ -28,6 +30,7 @@ s3Client = boto3.client('s3')
 
 def handler(event, context):
     t = Template()
+    iamTemplate = None
     for record in event['Records']:
 
         t.add_version("2010-09-09")
@@ -48,6 +51,12 @@ def handler(event, context):
                     t = sns(item, t, defaults=config)
                 if item['Protocol'] == 's3':
                     t = s3(item, t, defaults=config)
+                if item['Protocol'] == "kms":
+                    t = kms(item, t, defaults=config)
+                if item['Protocol'] == "iam":
+                    iamTemplate = Template()
+                    iamTemplate.add_version("2010-09-09")
+                    iamTemplate = iam(item, t, defaults=config)
 
                 # template = open(applicationName + ".template", "w")
                 # template.write(t.to_json())
@@ -59,6 +68,15 @@ def handler(event, context):
                     Body=template.read()
                 )
                 template.close()
+                if iamTemplate is not None:
+                    template = StringIO(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
+                    s3Client.put_object(
+                        Bucket=config['CloudformationBucket'],
+                        Key="IAM-" + applicationName + "/" + applicationName + ".template",
+                        Body=iamTemplate.read()
+                    )
+                    Template.close()
+
         except:
             print("Unexpected error:", sys.exc_info()[0])
             return {}
