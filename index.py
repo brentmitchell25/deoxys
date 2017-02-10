@@ -70,10 +70,10 @@ def handler(event, context):
                     template = StringIO(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
                     s3Client.put_object(
                         Bucket=config.get('DEFAULT', 'CloudformationBucket'),
-                        Key="IAM-" + applicationName + "/" + applicationName + ".template",
-                        Body=iamTemplate.read()
+                        Key=applicationName + "/" + applicationName + "-IAM.template",
+                        Body=template.read()
                     )
-                    Template.close()
+                    template.close()
 
         except:
             print("Unexpected error:", sys.exc_info()[0])
