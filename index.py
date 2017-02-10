@@ -22,8 +22,6 @@ if os.path.exists("defaults.ini"):
 else:
     config.read('default.ini')
 
-config = config['DEFAULT']
-
 dynamodb = boto3.resource('dynamodb')
 s3Client = boto3.client('s3')
 
@@ -63,7 +61,7 @@ def handler(event, context):
                 # template.write(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
                 template = StringIO(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
                 s3Client.put_object(
-                    Bucket=config['CloudformationBucket'],
+                    Bucket=config.get('DEFAULT', 'CloudformationBucket'),
                     Key=applicationName + "/" + applicationName + ".template",
                     Body=template.read()
                 )
@@ -71,7 +69,7 @@ def handler(event, context):
                 if iamTemplate is not None:
                     template = StringIO(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
                     s3Client.put_object(
-                        Bucket=config['CloudformationBucket'],
+                        Bucket=config.get('DEFAULT', 'CloudformationBucket'),
                         Key="IAM-" + applicationName + "/" + applicationName + ".template",
                         Body=iamTemplate.read()
                     )
