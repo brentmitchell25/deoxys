@@ -54,7 +54,7 @@ def handler(event, context):
                 if item['Protocol'] == "iam":
                     iamTemplate = Template()
                     iamTemplate.add_version("2010-09-09")
-                    iamTemplate = iam(item, t, defaults=config)
+                    iamTemplate = iam(item, iamTemplate, defaults=config)
 
                 # template = open(applicationName + ".template", "w")
                 # template.write(t.to_json())
