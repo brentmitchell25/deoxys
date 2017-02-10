@@ -59,9 +59,10 @@ def policy(statements):
 def iam(item, template, defaults):
     if 'Roles' in item:
         for role in item['Roles']:
+            print(role["AssumeRole"])
             template.add_resource(Role(
                 role['RoleName'] + "Role",
-                AssumeRolePolicyDocument=policy(role["AssumedRole"]) if "AssumedRole" in role else Ref("AWS::NoValue"),
+                AssumeRolePolicyDocument=policy(role["AssumeRole"]),
                 ManagedPolicyArns=[
                     Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
                               managedPolicy]) for managedPolicy
