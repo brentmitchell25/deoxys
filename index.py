@@ -15,20 +15,20 @@ import json
 import sys
 import os
 
+# Environment Variables
+config = ConfigParser.RawConfigParser()
+if os.path.exists("defaults.ini"):
+    config.read('defaults.ini')
+else:
+    config.read('default.ini')
+
+config = config['DEFAULT']
+
+dynamodb = boto3.resource('dynamodb')
+s3Client = boto3.client('s3')
 
 
 def handler(event, context):
-    # Environment Variables
-    config = ConfigParser()
-    if os.path.exists("defaults.ini"):
-        config.read('defaults.ini')
-    else:
-        config.read('default.ini')
-
-    config = config['DEFAULT']
-
-    dynamodb = boto3.resource('dynamodb')
-    s3Client = boto3.client('s3')
     t = Template()
     iamTemplate = None
     for record in event['Records']:
@@ -80,5 +80,3 @@ def handler(event, context):
         except:
             print("Unexpected error:", sys.exc_info()[0])
             return {}
-
-
