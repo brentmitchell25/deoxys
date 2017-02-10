@@ -8,14 +8,19 @@ from troposphere import Parameter, Ref, Template
 from boto3.dynamodb.conditions import Key, Attr
 import boto3
 import yaml
+import sys
+import os
 import json
-import configparser
+import ConfigParser
 
 # Environment Variables
 
-config = configparser.ConfigParser()
-config.read('defaults.ini')
-config = config['DEFAULT']
+config = ConfigParser.RawConfigParser()
+if os.path.exists("defaults.ini"):
+    config.read('defaults.ini')
+else:
+    config.read('default.ini')
+
 dynamodb = boto3.resource('dynamodb')
 
 t = Template()

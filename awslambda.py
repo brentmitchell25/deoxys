@@ -18,7 +18,7 @@ def awslambda(item, template, defaults):
                 )
             else:
                 code = Code(
-                    ZipFile=defaults['Code']
+                    ZipFile=defaults.get('DEFAULT','Code')
                 )
             resource = Function(
                 function['FunctionName'].replace('_', '') + item['Protocol'],

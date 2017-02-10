@@ -81,8 +81,8 @@ def kms(item, template, defaults):
             kmsKey = template.add_resource(Key(
                 key["Alias"] + "Key",
                 Description=key['Description'] if 'Description' in key else Ref('AWS::NoValue'),
-                Enabled=key['Enabled'] if 'Enabled' in key else defaults.getboolean('KmsEnabled'),
-                EnableKeyRotation=key['EnableKeyRotation'] if 'EnableKeyRotation' in key else defaults.getboolean(
+                Enabled=key['Enabled'] if 'Enabled' in key else defaults.getboolean('DEFAULT', 'KmsEnabled'),
+                EnableKeyRotation=key['EnableKeyRotation'] if 'EnableKeyRotation' in key else defaults.getboolean('DEFAULT',
                     'KmsEnableKeyRotation'),
                 KeyPolicy=defaultKeyPolicy(key['KeyAdmins'], key['KeyUsers']),
                 # DeletionPolicy=key['DeletionPolicy'] e

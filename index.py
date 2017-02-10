@@ -8,27 +8,27 @@ from troposphere import Template
 from boto3.dynamodb.conditions import Key
 from cStringIO import StringIO
 import awacs.sqs as sqs
-import configparser
+import ConfigParser
 import boto3
 import yaml
 import json
 import sys
 import os
 
-# Environment Variables
-config = configparser.ConfigParser()
-if os.path.exists("defaults.ini"):
-    config.read('defaults.ini')
-else:
-    config.read('default.ini')
-
-config = config['DEFAULT']
-
-dynamodb = boto3.resource('dynamodb')
-s3Client = boto3.client('s3')
 
 
 def handler(event, context):
+    # Environment Variables
+    config = ConfigParser()
+    if os.path.exists("defaults.ini"):
+        config.read('defaults.ini')
+    else:
+        config.read('default.ini')
+
+    config = config['DEFAULT']
+
+    dynamodb = boto3.resource('dynamodb')
+    s3Client = boto3.client('s3')
     t = Template()
     iamTemplate = None
     for record in event['Records']:
