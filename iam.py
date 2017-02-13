@@ -53,7 +53,7 @@ def getStatement(statement):
         "Resource": [resourceArn(resource) for resource in
                      statement["Resources"]] if "Resources" in statement else None
     }
-    return Statement(**dict((k,v) for k, v in parameters.iteritems() if v is not None))
+    return Statement(**dict((k, v) for k, v in parameters.iteritems() if v is not None))
 
     # if "Principal" in statement:
     #     return Statement(
@@ -81,20 +81,23 @@ def policy(statements):
 def iam(item, template, defaults):
     if 'Roles' in item:
         for role in item['Roles']:
-            template.add_resource(Role(
-                role['RoleName'] + "Role",
-                AssumeRolePolicyDocument=policy(role["AssumeRole"]),
-                ManagedPolicyArns=[
+            parameters = {
+                "AssumeRolePolicyDocument": policy(role["AssumeRole"]),
+                "ManagedPolicyArns": [
                     Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
                               managedPolicy]) for managedPolicy
                     in
-                    role["ManagedPolicies"]] if "ManagedPolicies" in role else Ref("AWS::NoValue"),
-                Path=role["Path"] if "Path" in role else Ref('AWS::NoValue'),
-                Policies=[
+                    role["ManagedPolicies"]] if "ManagedPolicies" in role else None,
+                "Path": role["Path"] if "Path" in role else None,
+                "Policies": [
                     Pol(PolicyName=pol["Name"],
                         PolicyDocument=policy(pol)) for pol in role["Policies"]
                     ],
-                RoleName=role["RoleName"]
+                "RoleName": role["RoleName"]
+            }
+            template.add_resource(Role(
+                role['RoleName'] + "Role",
+                **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             ))
             # template.add_resource(Role(
             #     role['RoleName'] + "Role",
