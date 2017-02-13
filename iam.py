@@ -16,7 +16,7 @@ def principalArn(principal):
         return [AWSPrincipal(Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":role/", role])) for role in
                 principal["Name"]]
     elif principal["Owner"] == "Service":
-        return Principal("Service", [Join("", [principal["Name"]])])
+        return Principal("Service", str(principal["Name"]))
     elif principal["Owner"] == "Federated":
         return Principal("Federated",
                          [Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":user/", federated]) for federated in
