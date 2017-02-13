@@ -18,7 +18,7 @@ def defaultKeyPolicy(admins, users):
                 Sid="Allow access for Key Administrators",
                 Effect=Allow,
                 Principal=AWSPrincipal([
-                    Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", admin["Type"], "/", admin["Name"]]) for admin
+                    Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", str(admin["Type"]).lower(), "/", admin["Name"]]) for admin
                     in
                     admins]),
                 Action=[
