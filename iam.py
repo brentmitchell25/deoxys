@@ -16,7 +16,7 @@ def principalArn(principal):
         return [AWSPrincipal(Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":role/", role])) for role in
                 principal["Name"]]
     elif principal["Owner"] == "Service":
-        return Principal("Service", str(principal["Name"]))
+        return Principal("Service", [str(principal["Name"])])
     elif principal["Owner"] == "Federated":
         return Principal("Federated",
                          [Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":user/", federated]) for federated in
@@ -31,16 +31,15 @@ def resourceArn(resource):
     if resource['Service'] == "All":
         return "*"
     elif resource['Service'] == "s3":
-        return Join("", ["arn:aws:s3:::", resource["Resource"]])
+        return "arn:aws:s3:::" +  resource["Resource"]
     else:
-        return Join("", ["arn:aws:", resource["Service"], ":", Ref("AWS::AccountId"), ":", resource["Resource"]])
+        return Join("", ["arn:aws:", resource["Service"], ":", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":", resource["Resource"]])
 
 
 def getActions(statement):
     if "Actions" in statement:
         return [Action(action.split(":")[0], action.split(":")[1]) for action in statement["Actions"]]
     elif "Action" in statement:
-        print(statement["Action"])
         return [Action(statement["Action"].split(":")[0], statement["Action"].split(":")[1])]
 
 

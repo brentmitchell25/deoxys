@@ -46,6 +46,8 @@ for item in protocols['Items']:
         iamTemplate = Template()
         iamTemplate.add_version("2010-09-09")
         iamTemplate = iam(item, t, defaults=config)
+        # print(iamTemplate.to_json())
+        print(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
 
 
-print(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
+# print(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
