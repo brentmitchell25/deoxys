@@ -16,10 +16,12 @@ def principalArn(principal):
         return [AWSPrincipal(Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":role/", role])) for role in
                 principal["Name"]]
     elif principal["Owner"] == "Service":
-        return Principal("Service",
-                         [Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":user/", service]) for service in
-                          principal["Name"]])
+        return Principal("Service", [Join("", [principal["Name"]])])
     elif principal["Owner"] == "Federated":
+        return Principal("Federated",
+                         [Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":user/", federated]) for federated in
+                          principal["Name"]])
+    elif principal["Owner"] == "Custom":
         return Principal("Federated",
                          [Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":user/", federated]) for federated in
                           principal["Name"]])
@@ -33,22 +35,42 @@ def resourceArn(resource):
     else:
         return Join("", ["arn:aws:", resource["Service"], ":", Ref("AWS::AccountId"), ":", resource["Resource"]])
 
+
+def getActions(statement):
+    if "Actions" in statement:
+        return [Action(action.split(":")[0], action.split(":")[1]) for action in statement["Actions"]]
+    elif "Action" in statement:
+        print(statement["Action"])
+        return [Action(statement["Action"].split(":")[0], statement["Action"].split(":")[1])]
+
+
 def getStatement(statement):
-    if "Principal" in statement:
-        return Statement(
-            Sid=statement["Sid"] if "Sid" in statement else "",
-            Effect=statement["Effect"] if "Effect" in statement else Allow,
-            Principal=principalArn(statement["Principal"]),
-            Action=[Action(action.split(":")[0], action.split(":")[1]) for action in statement["Actions"]],
-            Resource=[resourceArn(resource) for resource in statement["Resources"]]
-        )
-    else:
-        return Statement(
-            Sid=statement["Sid"] if "Sid" in statement else "",
-            Effect=statement["Effect"] if "Effect" in statement else Allow,
-            Action=[Action(action.split(":")[0], action.split(":")[1]) for action in statement["Actions"]],
-            Resource=[resourceArn(resource) for resource in statement["Resources"]]
-        )
+    parameters = {
+        "Sid": statement["Sid"] if "Sid" in statement else None,
+        "Effect": statement["Effect"] if "Effect" in statement else Allow,
+        "Principal": principalArn(statement["Principal"]) if "Principal" in statement else None,
+        "Action": getActions(statement) if "Action" or "Actions" in statement else None,
+        "Resource": [resourceArn(resource) for resource in
+                     statement["Resources"]] if "Resources" in statement else None
+    }
+    return Statement(**dict((k,v) for k, v in parameters.iteritems() if v is not None))
+
+    # if "Principal" in statement:
+    #     return Statement(
+    #         Sid=statement["Sid"] if "Sid" in statement else "",
+    #         Effect=statement["Effect"] if "Effect" in statement else Allow,
+    #         Principal=principalArn(statement["Principal"]),
+    #         Action=getActions(statement),
+    #         Resource=[resourceArn(resource) for resource in statement["Resources"]] if "Resources" in statement else []
+    #     )
+    # else:
+    #     return Statement(
+    #         Sid=statement["Sid"] if "Sid" in statement else "",
+    #         Effect=statement["Effect"] if "Effect" in statement else Allow,
+    #         Action=getActions(statement),
+    #         Resource=[resourceArn(resource) for resource in statement["Resources"]] if "Resources" in statement else []
+    #     )
+
 
 def policy(statements):
     return Policy(
@@ -59,7 +81,6 @@ def policy(statements):
 def iam(item, template, defaults):
     if 'Roles' in item:
         for role in item['Roles']:
-            print(role["AssumeRole"])
             template.add_resource(Role(
                 role['RoleName'] + "Role",
                 AssumeRolePolicyDocument=policy(role["AssumeRole"]),
