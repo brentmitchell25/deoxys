@@ -66,12 +66,12 @@ def handler(event, context):
                 template.close()
 
                 template = StringIO(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
-                myzip = zipfile.ZipFile(config.get('WriteFileDirectory') + applicationName + ".zip", 'w')
+                myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", 'w')
                 myzip.writestr(applicationName + ".template", template.read())
                 myzip.close()
                 template.close()
 
-                with open(config.get('WriteFileDirectory') + applicationName + ".zip", "rb") as myzip:
+                with open(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", "rb") as myzip:
                     s3Client.put_object(
                         Bucket=config.get('DEFAULT', 'CloudformationBucket'),
                         Key=applicationName + "/" + applicationName + ".zip",
@@ -88,13 +88,15 @@ def handler(event, context):
                     template.close()
 
                     template = StringIO(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
-                    myzip = zipfile.ZipFile(config.get('WriteFileDirectory') + applicationName + "-IAM.zip", 'w')
+                    myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + "-IAM.zip",
+                                            'w')
                     myzip.writestr(applicationName + "-IAM.template",
                                    template.read())
                     myzip.close()
                     template.close()
 
-                    with open(config.get('WriteFileDirectory') + applicationName + "-IAM.zip", "rb") as myzip:
+                    with open(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + "-IAM.zip",
+                              "rb") as myzip:
                         s3Client.put_object(
                             Bucket=config.get('DEFAULT', 'CloudformationBucket'),
                             Key=applicationName + "/" + applicationName + "-IAM.zip",
