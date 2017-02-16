@@ -67,7 +67,7 @@ def handler(event, context):
 
                 template = StringIO(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
                 myzip = zipfile.ZipFile(applicationName + ".zip", 'w')
-                myzip.writestr(applicationName + ".template", template.read())
+                myzip.writestr(config.get('WriteFileDirectory') + applicationName + ".template", template.read())
                 myzip.close()
                 template.close()
 
@@ -89,7 +89,8 @@ def handler(event, context):
 
                     template = StringIO(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
                     myzip = zipfile.ZipFile(applicationName + "-IAM.zip", 'w')
-                    myzip.writestr(applicationName + "-IAM.template", template.read())
+                    myzip.writestr(config.get('WriteFileDirectory') + applicationName + "-IAM.template",
+                                   template.read())
                     myzip.close()
                     template.close()
 
