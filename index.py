@@ -14,6 +14,7 @@ import json
 import sys
 import os
 import zipfile
+import traceback
 
 # Environment Variables
 config = ConfigParser.RawConfigParser()
@@ -99,6 +100,8 @@ def handler(event, context):
                             Body=myzip.read()
                         )
 
-        except:
+        except Exception, e:
             print("Unexpected error:", sys.exc_info()[0])
+            print("Couldn't do it: %s" % e)
+            traceback.print_exc()
             return {}
