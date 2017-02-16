@@ -45,8 +45,7 @@ for item in protocols['Items']:
     if item['Protocol'] == "iam":
         iamTemplate = Template()
         iamTemplate.add_version("2010-09-09")
-        iamTemplate = iam(item, t, defaults=config)
-        # print(iamTemplate.to_json())
+        iamTemplate = iam(item, iamTemplate, defaults=config)
         print(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
 
 

@@ -41,7 +41,7 @@ def defaultKeyPolicy(admins, users):
                 Sid="Allow use of the key",
                 Effect=Allow,
                 Principal=AWSPrincipal([
-                    Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", user["Type"], "/", user["Name"]]) for user
+                    Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", str(user["Type"]).lower(), "/", user["Name"]]) for user
                     in
                     users]),
                 Action=[
@@ -57,7 +57,7 @@ def defaultKeyPolicy(admins, users):
                 Sid="Allow attachment of persistent resources",
                 Effect=Allow,
                 Principal=AWSPrincipal([
-                                           Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", user["Type"], "/",
+                                           Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", str(user["Type"]).lower(), "/",
                                                      user["Name"]]) for user
                                            in
                                            users]),
@@ -89,7 +89,7 @@ def kms(item, template, defaults):
             ))
             alias = template.add_resource(Alias(
                 key["Alias"]  + "Alias",
-                AliasName=key["Alias"],
+                AliasName=key["Alias"] if str(key["Alias"]).startswith("alias/")  else "alias/" + key["Alias"],
                 TargetKeyId=Ref(kmsKey),
                 # DeletionPolicy="Retain"
             ))

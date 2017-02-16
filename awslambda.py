@@ -41,8 +41,9 @@ def awslambda(item, template, defaults):
                 Timeout=str(function['Timeout']) if 'Timeout' in function else '3',
             )
             if 'Poller' in function:
-                template.add_resource(Rule(
-                    function['FunctionName'].replace('_', '') + 'Poller',
+                pollerId = function['FunctionName'].replace('_', '') + 'Poller'
+                poller = template.add_resource(Rule(
+                    pollerId,
                     Name=function['FunctionName'].replace('_', '') + 'Poller',
                     Description=function['FunctionName'].replace('_', '') + " Poller",
                     ScheduleExpression="rate(" + str(function['Poller']['Rate']) + ")",
@@ -52,6 +53,13 @@ def awslambda(item, template, defaults):
                         Id=function['FunctionName'].replace('_', '')
                     )],
                     DependsOn=[function['FunctionName'].replace('_', '') + item['Protocol']]
+                ))
+                template.add_resource(Permission(
+                    pollerId + 'Permission',
+                    Action="lambda:InvokeFunction",
+                    Principal="events.amazonaws.com",
+                    SourceArn=GetAtt(poller, "Arn"),
+                    FunctionName=Ref(resource)
                 ))
             template.add_resource(resource)
     return template
