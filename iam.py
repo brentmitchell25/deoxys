@@ -94,8 +94,9 @@ def iam(item, template, defaults):
                     ],
                 "RoleName": role["RoleName"]
             }
+            print(parameters)
             template.add_resource(Role(
-                role['RoleName'] + "Role",
+                role['RoleName'].replace("-", "") + "Role",
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             ))
             # template.add_resource(Role(

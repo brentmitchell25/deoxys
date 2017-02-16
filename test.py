@@ -26,7 +26,7 @@ dynamodb = boto3.resource('dynamodb')
 t = Template()
 
 t.add_version("2010-09-09")
-applicationName = "SFTP"
+applicationName = "BKR"
 protocols = dynamodb.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
