@@ -7,13 +7,13 @@ from iam import iam
 from troposphere import Template
 from boto3.dynamodb.conditions import Key
 from cStringIO import StringIO
-import awacs.sqs as sqs
 import ConfigParser
 import boto3
 import yaml
 import json
 import sys
 import os
+import zipfile
 
 # Environment Variables
 config = ConfigParser.RawConfigParser()
@@ -56,9 +56,6 @@ def handler(event, context):
                     iamTemplate.add_version("2010-09-09")
                     iamTemplate = iam(item, iamTemplate, defaults=config)
 
-                # template = open(applicationName + ".template", "w")
-                # template.write(t.to_json())
-                # template.write(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
                 template = StringIO(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
                 s3Client.put_object(
                     Bucket=config.get('DEFAULT', 'CloudformationBucket'),
@@ -66,6 +63,20 @@ def handler(event, context):
                     Body=template.read()
                 )
                 template.close()
+
+                template = StringIO(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
+                myzip = zipfile.ZipFile(applicationName + ".zip", 'w')
+                myzip.writestr(applicationName + ".template", template.read())
+                myzip.close()
+                template.close()
+
+                with open(applicationName + ".zip", "rb") as myzip:
+                    s3Client.put_object(
+                        Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                        Key=applicationName + "/" + applicationName + ".zip",
+                        Body=myzip.read()
+                    )
+
                 if iamTemplate is not None:
                     template = StringIO(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
                     s3Client.put_object(
@@ -74,6 +85,19 @@ def handler(event, context):
                         Body=template.read()
                     )
                     template.close()
+
+                    template = StringIO(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
+                    myzip = zipfile.ZipFile(applicationName + "-IAM.zip", 'w')
+                    myzip.writestr(applicationName + "-IAM.template", template.read())
+                    myzip.close()
+                    template.close()
+
+                    with open(applicationName + "-IAM.zip", "rb") as myzip:
+                        s3Client.put_object(
+                            Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                            Key=applicationName + "/" + applicationName + "-IAM.zip",
+                            Body=myzip.read()
+                        )
 
         except:
             print("Unexpected error:", sys.exc_info()[0])

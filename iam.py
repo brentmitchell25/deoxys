@@ -1,7 +1,9 @@
 from troposphere.iam import Role, User, ManagedPolicy, Policy as Pol
 from awacs.aws import Action, Allow, Policy, Statement, Condition, AWSPrincipal, Bool, Principal
 from troposphere import Ref, Join
+import re
 
+regex = re.compile('[^a-zA-Z]')
 
 def principalArn(principal):
     if principal["Owner"] == "User":
@@ -94,20 +96,8 @@ def iam(item, template, defaults):
                     ],
                 "RoleName": role["RoleName"]
             }
-            print(parameters)
             template.add_resource(Role(
-                role['RoleName'].replace("-", "") + "Role",
+                regex.sub("", role['RoleName']) + "Role",
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             ))
-            # template.add_resource(Role(
-            #     role['RoleName'] + "Role",
-            #     ManagedPolicyArns=[
-            #         Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
-            #                   managedPolicy]) for managedPolicy
-            #         in
-            #         role["ManagedPolicies"]],
-            #     Path=role["Path"] if "Path" in role else Ref('AWS::NoValue'),
-            #     Policies=[policy(pol) for pol in role["Policies"]],
-            #     RoleName=role["RoleName"]
-            # ))
     return template
