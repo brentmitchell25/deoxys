@@ -1,4 +1,4 @@
-from troposphere.dynamodb2 import ProvisionedThroughput, Table, AttributeDefinition, KeySchema, GlobalSecondaryIndex, \
+from troposphere.dynamodb import ProvisionedThroughput, Table, AttributeDefinition, KeySchema, GlobalSecondaryIndex, \
     LocalSecondaryIndex, Projection, StreamSpecification
 from troposphere import Ref, Join, GetAtt
 from troposphere.awslambda import EventSourceMapping
@@ -9,9 +9,12 @@ import re
 regex = re.compile('[^a-zA-Z]')
 
 
-def keySchema(keySchemas):
-    return (KeySchema(AttributeName=keySchema["AttributeName"], KeyType=keySchema["KeyName"]) for keySchema in
-            keySchemas)
+def keySchema(keySchemas, defaults):
+    return [KeySchema(AttributeName=keySchema["AttributeName"],
+                      KeyType=keySchema["KeyType"] if "KeyType" in keySchema else defaults.get("DEFAULT",
+                                                                                               "AttributeType")) for
+            keySchema in
+            keySchemas]
 
 
 def dynamodb(item, template, defaults):
@@ -25,44 +28,44 @@ def dynamodb(item, template, defaults):
                                          table["AttributeDefinitions"]],
                 "GlobalSecondaryIndexes": [GlobalSecondaryIndex(
                     IndexName=globalSecondaryIndex["IndexName"],
-                    KeySchema=[keySchema(globalSecondaryIndex["KeySchema"])],
+                    KeySchema=keySchema(globalSecondaryIndex["KeySchema"], defaults=defaults),
                     Projection=Projection(
                         NonKeyAttributes=globalSecondaryIndex["Projection"]["NonKeyAttributes"],
                         ProjectionType=globalSecondaryIndex["Projection"]["ProjectionType"]
                     ),
                     ProvisionedThroughput=ProvisionedThroughput(
-                        ReadCapacityUnits=globalSecondaryIndex["ProvisionedThroughput"][
-                            "ReadCapacityUnits"] if "ProvisionedThroughput" in globalSecondaryIndex and "ReadCapacityUnits" in
-                                                                                                        globalSecondaryIndex[
-                                                                                                            "ProvisionedThroughput"] else
-                        defaults.get("DEFAULT", "ReadCapacityUnits"),
-                        WriteCapacityUnits=globalSecondaryIndex["ProvisionedThroughput"][
-                            "WriteCapacityUnits"] if "ProvisionedThroughput" in globalSecondaryIndex and "WriteCapacityUnits" in
-                                                                                                         globalSecondaryIndex[
-                                                                                                             "ProvisionedThroughput"] else
-                        defaults.get("DEFAULT", "WriteCapacityUnits")
+                        ReadCapacityUnits=int(globalSecondaryIndex["ProvisionedThroughput"][
+                                                  "ReadCapacityUnits"] if "ProvisionedThroughput" in globalSecondaryIndex and "ReadCapacityUnits" in
+                                                                                                                              globalSecondaryIndex[
+                                                                                                                                  "ProvisionedThroughput"] else
+                                              defaults.get("DEFAULT", "ReadCapacityUnits")),
+                        WriteCapacityUnits=int(globalSecondaryIndex["ProvisionedThroughput"][
+                                                   "WriteCapacityUnits"] if "ProvisionedThroughput" in globalSecondaryIndex and "WriteCapacityUnits" in
+                                                                                                                                globalSecondaryIndex[
+                                                                                                                                    "ProvisionedThroughput"] else
+                                               defaults.get("DEFAULT", "WriteCapacityUnits"))
                     )
                 ) for globalSecondaryIndex in table] if "GlobalSecondaryIndexes" in table else None,
-                "KeySchema": [keySchema(table["KeySchema"])],
+                "KeySchema": keySchema(table["KeySchema"], defaults=defaults),
                 "LocalSecondaryIndexes": [LocalSecondaryIndex(
                     IndexName=localSecondaryIndex["IndexName"],
-                    KeySchema=[keySchema(localSecondaryIndex["KeySchema"])],
+                    KeySchema=keySchema(localSecondaryIndex["KeySchema"], defaults=defaults),
                     Projection=Projection(
                         NonKeyAttributes=localSecondaryIndex["Projection"]["NonKeyAttributes"],
                         ProjectionType=localSecondaryIndex["Projection"]["ProjectionType"]
                     )
                 ) for localSecondaryIndex in table] if "LocalSecondaryIndexes" in table else None,
                 "ProvisionedThroughput": ProvisionedThroughput(
-                    ReadCapacityUnits=table["ProvisionedThroughput"][
-                        "ReadCapacityUnits"] if "ProvisionedThroughput" in table and "ReadCapacityUnits" in
-                                                                                     table[
-                                                                                         "ProvisionedThroughput"] else
-                    defaults.get("DEFAULT", "ReadCapacityUnits"),
-                    WriteCapacityUnits=table["ProvisionedThroughput"][
-                        "WriteCapacityUnits"] if "ProvisionedThroughput" in table and "WriteCapacityUnits" in
-                                                                                      table[
-                                                                                          "ProvisionedThroughput"] else
-                    defaults.get("DEFAULT", "WriteCapacityUnits"),
+                    ReadCapacityUnits=int(table["ProvisionedThroughput"][
+                                              "ReadCapacityUnits"] if "ProvisionedThroughput" in table and "ReadCapacityUnits" in
+                                                                                                           table[
+                                                                                                               "ProvisionedThroughput"] else
+                                          defaults.get("DEFAULT", "ReadCapacityUnits")),
+                    WriteCapacityUnits=int(table["ProvisionedThroughput"][
+                                               "WriteCapacityUnits"] if "ProvisionedThroughput" in table and "WriteCapacityUnits" in
+                                                                                                             table[
+                                                                                                                 "ProvisionedThroughput"] else
+                                           defaults.get("DEFAULT", "WriteCapacityUnits")),
 
                 ),
                 "StreamSpecification": StreamSpecification(
@@ -82,17 +85,18 @@ def dynamodb(item, template, defaults):
             if "Triggers" in table:
                 for trigger in table["Triggers"]:
                     parameters = {
-                        "BatchSize": trigger["BatchSize"] if "BatchSize" in trigger else None,
-                        "Enabled": trigger["FunctionName"] if "Enabled" in trigger else "Enabled",
+                        "BatchSize": int(trigger["BatchSize"]) if "BatchSize" in trigger else None,
+                        "Enabled": bool(trigger["Enabled"]) if "Enabled" in trigger else None,
                         "EventSourceArn": GetAtt(tableResource, "StreamArn"),
-                        "FunctionName": trigger["FunctionName"],
+                        "FunctionName": trigger["FunctionName"] if "FunctionName" in trigger else trigger,
                         "StartingPosition": trigger[
                             "StartingPosition"] if "StartingPosition" in trigger else defaults.get("DEFAULT",
                                                                                                    "StartingPosition"),
                         "DependsOn": [tableId]
                     }
                     eventSourceMapping = EventSourceMapping(
-                        regex.sub("", trigger["FunctionName"]) + tableId + "EventSourceMapping",
+                        regex.sub("", trigger[
+                            "FunctionName"] if "FunctionName" in trigger else trigger) + tableId + "EventSourceMapping",
                         **dict((k, v) for k, v in parameters.iteritems() if v is not None)
                     )
                     template.add_resource(eventSourceMapping)

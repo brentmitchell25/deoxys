@@ -4,6 +4,7 @@ from sns import sns
 from s3 import s3
 from kms import kms
 from iam import iam
+from dynamodb import dynamodb
 from troposphere import Template
 from boto3.dynamodb.conditions import Key
 from cStringIO import StringIO
@@ -23,7 +24,7 @@ if os.path.exists("defaults.ini"):
 else:
     config.read('default.ini')
 
-dynamodb = boto3.resource('dynamodb')
+dynamodbClient = boto3.resource('dynamodb')
 s3Client = boto3.client('s3')
 
 
@@ -37,7 +38,7 @@ def handler(event, context):
         try:
             print(record)
             applicationName = record['dynamodb']['NewImage']['ApplicationName']['S']
-            protocols = dynamodb.Table('Application').query(
+            protocols = dynamodbClient.Table('Application').query(
                 KeyConditionExpression=Key('ApplicationName').eq(applicationName)
             )
             resources = {}

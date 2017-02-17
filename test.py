@@ -24,14 +24,14 @@ if os.path.exists("defaults.ini"):
 else:
     config.read('default.ini')
 
-dynamodb = boto3.resource('dynamodb')
+dynamodbClient = boto3.resource('dynamodb')
 s3Client = boto3.client('s3')
 
 t = Template()
 
 t.add_version("2010-09-09")
-applicationName = "BKR"
-protocols = dynamodb.Table('Application').query(
+applicationName = "Test"
+protocols = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
 resources = {}
