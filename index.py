@@ -52,6 +52,8 @@ def handler(event, context):
                     t = s3(item, t, defaults=config)
                 if item['Protocol'] == "kms":
                     t = kms(item, t, defaults=config)
+                if item['Protocol'] == "dynamodb":
+                    t = dynamodb(item, t, defaults=config)
                 if item['Protocol'] == "iam":
                     iamTemplate = Template()
                     iamTemplate.add_version("2010-09-09")
