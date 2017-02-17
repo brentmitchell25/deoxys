@@ -2,29 +2,54 @@ from troposphere.awslambda import Function, Code, Permission, VPCConfig, Environ
 from troposphere.events import Rule, Target
 from troposphere import FindInMap, GetAtt, Join, Output
 from troposphere import Parameter, Ref, Template
+import awacs.awslambda as awslambda
+from awacs.aws import Action, Principal
+import re
+regex = re.compile('[^a-zA-Z]')
+
+def getCode(function, defaults):
+    code = None
+    if 'Code' in function and 'S3Bucket' in function['Code'] and 'S3Key' in function['Code']:
+        code = Code(
+            S3Bucket=function['Code']['S3Bucket'],
+            S3Key=function['Code']['S3Key']
+        )
+    elif 'Code' in function and 'ZipFile' in function['Code']:
+        code = Code(
+            ZipFile=function['Code']['ZipFile']
+        )
+    else:
+        code = Code(
+            ZipFile=defaults.get('DEFAULT', 'Code')
+        )
+    return code
+
+def getVpcConfig(function, defaults):
+    code = None
+    if 'VpcConfig' in function:
+        code = Code(
+            S3Bucket=function['Code']['S3Bucket'],
+            S3Key=function['Code']['S3Key']
+        )
+    elif 'Code' in function and 'ZipFile' in function['Code']:
+        code = Code(
+            ZipFile=function['Code']['ZipFile']
+        )
+    else:
+        code = Code(
+            ZipFile=defaults.get('DEFAULT', 'Code')
+        )
+    return code
 
 def awslambda(item, template, defaults):
     if 'Functions' in item:
         for function in item['Functions']:
-            code = None
-            if 'Code' in function and 'S3Bucket' in function['Code'] and 'S3Key' in function['Code']:
-                code = Code(
-                    S3Bucket=function['Code']['S3Bucket'],
-                    S3Key=function['Code']['S3Key']
-                )
-            elif 'Code' in function and 'ZipFile' in function['Code']:
-                code = Code(
-                    ZipFile=function['Code']['ZipFile']
-                )
-            else:
-                code = Code(
-                    ZipFile=defaults.get('DEFAULT','Code')
-                )
+            functionId = regex.sub("",function['FunctionName'])
             resource = Function(
-                function['FunctionName'].replace('_', '') + item['Protocol'],
+                functionId + item['Protocol'],
                 FunctionName=function['FunctionName'],
                 Description=function['Description'] if 'Description' in function else Ref('AWS::NoValue'),
-                Code=code,
+                Code=function,
                 Handler=function['Handler'] if 'Handler' in function else 'index.handler',
                 Environment=Environment(
                     Variables={key: value for key, value in
@@ -36,28 +61,28 @@ def awslambda(item, template, defaults):
                 ) if 'VpcConfig' in function else Ref('AWS::NoValue'),
                 Role=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":role/",
                                function['Role']]),
-                Runtime=function['Runtime'] if 'Runtime' in function else 'nodejs4.3',
-                MemorySize=function['MemorySize'] if 'MemorySize' in function else '128',
-                Timeout=str(function['Timeout']) if 'Timeout' in function else '3',
+                Runtime=function['Runtime'] if 'Runtime' in function else defaults.get("DEFAULT", "LambdaRuntime"),
+                MemorySize=function['MemorySize'] if 'MemorySize' in function else defaults.get("DEFAULT", "LambdaMemorySize"),
+                Timeout=str(function['Timeout']) if 'Timeout' in function else defaults.get("DEFAULT", "Timeout"),
             )
             if 'Poller' in function:
-                pollerId = function['FunctionName'].replace('_', '') + 'Poller'
+                pollerId = functionId + 'Poller'
                 poller = template.add_resource(Rule(
                     pollerId,
-                    Name=function['FunctionName'].replace('_', '') + 'Poller',
-                    Description=function['FunctionName'].replace('_', '') + " Poller",
+                    Name=function['FunctionName'] + 'Poller',
+                    Description=function['FunctionName'] + " Poller",
                     ScheduleExpression="rate(" + str(function['Poller']['Rate']) + ")",
                     State="ENABLED",
                     Targets=[Target(
                         Arn=GetAtt(resource, "Arn"),
-                        Id=function['FunctionName'].replace('_', '')
+                        Id=functionId
                     )],
-                    DependsOn=[function['FunctionName'].replace('_', '') + item['Protocol']]
+                    DependsOn=[functionId + item['Protocol']]
                 ))
                 template.add_resource(Permission(
                     pollerId + 'Permission',
-                    Action="lambda:InvokeFunction",
-                    Principal="events.amazonaws.com",
+                    Action=awslambda.InvokeFunction,
+                    Principal=Principal("Service", ["events.amazonaws.com"]),
                     SourceArn=GetAtt(poller, "Arn"),
                     FunctionName=Ref(resource)
                 ))

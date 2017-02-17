@@ -7,6 +7,7 @@ from awacs.aws import Policy, Statement, Principal, Action, Condition, Condition
 from awacs.aws import Allow, ArnEquals, AWSPrincipal, Condition
 import re
 import awacs.sqs as sqs
+import awacs.awslambda as awslambda
 
 regex = re.compile('[^a-zA-Z]')
 
@@ -57,8 +58,8 @@ def sns(item, template, defaults):
                             endpointId + regex.sub('', topic['TopicName']) + 'InvokePermission',
                             DependsOn=[topicId, endpointId] if topic['CreateTopic'] == True else [
                                 endpointId],
-                            Action="lambda:InvokeFunction",
-                            Principal="sns.amazonaws.com",
+                            Action=awslambda.InvokeFunction,
+                            Principal=Principal("Service", ["sns.amazonaws.com"]),
                             SourceArn=Join("",
                                            ["arn:aws:sns:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"),
                                             ":",
