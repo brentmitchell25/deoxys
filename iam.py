@@ -56,21 +56,7 @@ def getStatement(statement):
     }
     return Statement(**dict((k, v) for k, v in parameters.iteritems() if v is not None))
 
-    # if "Principal" in statement:
-    #     return Statement(
-    #         Sid=statement["Sid"] if "Sid" in statement else "",
-    #         Effect=statement["Effect"] if "Effect" in statement else Allow,
-    #         Principal=principalArn(statement["Principal"]),
-    #         Action=getActions(statement),
-    #         Resource=[resourceArn(resource) for resource in statement["Resources"]] if "Resources" in statement else []
-    #     )
-    # else:
-    #     return Statement(
-    #         Sid=statement["Sid"] if "Sid" in statement else "",
-    #         Effect=statement["Effect"] if "Effect" in statement else Allow,
-    #         Action=getActions(statement),
-    #         Resource=[resourceArn(resource) for resource in statement["Resources"]] if "Resources" in statement else []
-    #     )
+
 
 
 def policy(statements):

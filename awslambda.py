@@ -5,7 +5,9 @@ from troposphere import Parameter, Ref, Template
 import awacs.awslambda as awslambda
 from awacs.aws import Action, Principal
 import re
+
 regex = re.compile('[^a-zA-Z]')
+
 
 def getCode(function, defaults):
     code = None
@@ -24,6 +26,7 @@ def getCode(function, defaults):
         )
     return code
 
+
 def getVpcConfig(function, defaults):
     code = None
     if 'VpcConfig' in function:
@@ -41,29 +44,41 @@ def getVpcConfig(function, defaults):
         )
     return code
 
+
 def awslambda(item, template, defaults):
     if 'Functions' in item:
         for function in item['Functions']:
-            functionId = regex.sub("",function['FunctionName'])
-            resource = Function(
-                functionId + item['Protocol'],
-                FunctionName=function['FunctionName'],
-                Description=function['Description'] if 'Description' in function else Ref('AWS::NoValue'),
-                Code=getCode(function, defaults=defaults),
-                Handler=function['Handler'] if 'Handler' in function else 'index.handler',
-                Environment=Environment(
+            functionId = regex.sub("", function['FunctionName'])
+            parameters = {
+                "FunctionName": function['FunctionName'],
+                "Description": function['Description'] if 'Description' in function else None,
+                "Code": getCode(function, defaults=defaults),
+                "Handler": function[
+                    'Handler'] if 'Handler' in function else 'index.handler',
+                "Environment": Environment(
                     Variables={key: value for key, value in
                                list(function["Environment"]["Variables"].items())}
-                ) if 'Environment' in function else Ref('AWS::NoValue'),
-                VpcConfig=VPCConfig(
+                ) if 'Environment' in function else None,
+                "VpcConfig": VPCConfig(
                     SecurityGroupIds=[function['VpcConfig']['SecurityGroupIds']],
                     SubnetIds=function['VpcConfig']['SubnetIds'].split(',')
-                ) if 'VpcConfig' in function else Ref('AWS::NoValue'),
-                Role=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":role/",
-                               function['Role']]),
-                Runtime=function['Runtime'] if 'Runtime' in function else defaults.get("DEFAULT", "LambdaRuntime"),
-                MemorySize=function['MemorySize'] if 'MemorySize' in function else defaults.get("DEFAULT", "LambdaMemorySize"),
-                Timeout=str(function['Timeout']) if 'Timeout' in function else defaults.get("DEFAULT", "Timeout"),
+                ) if 'VpcConfig' in function else None,
+                "Role": Join("",
+                             ["arn:aws:iam::",
+                              Ref(
+                                  "AWS::AccountId"),
+                              ":role/",
+                              function['Role']]),
+                "Runtime": function[
+                    'Runtime'] if 'Runtime' in function else defaults.get(
+                    "DEFAULT", "LambdaRuntime"),
+                "MemorySize"
+                    function['MemorySize'] if 'MemorySize' in function else defaults.get("DEFAULT", "LambdaMemorySize"),
+                "Timeout": str(function['Timeout']) if 'Timeout' in function else defaults.get("DEFAULT", "Timeout")
+            }
+            resource = Function(
+                functionId + item['Protocol'],
+                **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
             if 'Poller' in function:
                 pollerId = functionId + 'Poller'
