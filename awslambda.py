@@ -49,7 +49,7 @@ def awslambda(item, template, defaults):
                 functionId + item['Protocol'],
                 FunctionName=function['FunctionName'],
                 Description=function['Description'] if 'Description' in function else Ref('AWS::NoValue'),
-                Code=function,
+                Code=getCode(function, defaults=defaults),
                 Handler=function['Handler'] if 'Handler' in function else 'index.handler',
                 Environment=Environment(
                     Variables={key: value for key, value in
@@ -81,8 +81,8 @@ def awslambda(item, template, defaults):
                 ))
                 template.add_resource(Permission(
                     pollerId + 'Permission',
-                    Action=awslambda.InvokeFunction,
-                    Principal=Principal("Service", ["events.amazonaws.com"]),
+                    Action="lambda:InvokeFunction",
+                    Principal="events.amazonaws.com",
                     SourceArn=GetAtt(poller, "Arn"),
                     FunctionName=Ref(resource)
                 ))

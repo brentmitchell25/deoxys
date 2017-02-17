@@ -58,8 +58,8 @@ def sns(item, template, defaults):
                             endpointId + regex.sub('', topic['TopicName']) + 'InvokePermission',
                             DependsOn=[topicId, endpointId] if topic['CreateTopic'] == True else [
                                 endpointId],
-                            Action=awslambda.InvokeFunction,
-                            Principal=Principal("Service", ["sns.amazonaws.com"]),
+                            Action="lambda:InvokeFunction",
+                            Principal="sns.amazonaws.com",
                             SourceArn=Join("",
                                            ["arn:aws:sns:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"),
                                             ":",
