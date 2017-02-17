@@ -66,7 +66,7 @@ def awslambda(item, template, defaults):
                 "Runtime": function[
                     'Runtime'] if 'Runtime' in function else defaults.get(
                     "DEFAULT", "LambdaRuntime"),
-                "MemorySize"
+                "MemorySize":
                     function['MemorySize'] if 'MemorySize' in function else defaults.get("DEFAULT", "LambdaMemorySize"),
                 "Timeout": str(function['Timeout']) if 'Timeout' in function else defaults.get("DEFAULT", "Timeout")
             }
