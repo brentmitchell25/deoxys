@@ -28,21 +28,18 @@ def getCode(function, defaults):
 
 
 def getVpcConfig(function, defaults):
-    code = None
-    if 'VpcConfig' in function:
-        code = Code(
-            S3Bucket=function['Code']['S3Bucket'],
-            S3Key=function['Code']['S3Key']
+    vpcConfig = None
+    if 'VpcConfig' in function and str(function['VpcConfig']).lower().strip() == "true":
+        vpcConfig = VPCConfig(
+            SecurityGroupIds=(defaults.get('DEFAULT', 'LambdaSecuritGroupIds')).split(','),
+            SubnetIds=(defaults.get('DEFAULT', 'LambdaSubnetIds')).split(',')
         )
-    elif 'Code' in function and 'ZipFile' in function['Code']:
-        code = Code(
-            ZipFile=function['Code']['ZipFile']
+    elif 'VpcConfig' in function :
+        vpcConfig = VPCConfig(
+            SecurityGroupIds=function['VpcConfig']['SecurityGroupIds'].split(','),
+            SubnetIds=function['VpcConfig']['SubnetIds'].split(',')
         )
-    else:
-        code = Code(
-            ZipFile=defaults.get('DEFAULT', 'Code')
-        )
-    return code
+    return vpcConfig
 
 
 def awslambda(item, template, defaults):
@@ -59,10 +56,7 @@ def awslambda(item, template, defaults):
                     Variables={key: value for key, value in
                                list(function["Environment"]["Variables"].items())}
                 ) if 'Environment' in function else None,
-                "VpcConfig": VPCConfig(
-                    SecurityGroupIds=[function['VpcConfig']['SecurityGroupIds']],
-                    SubnetIds=function['VpcConfig']['SubnetIds'].split(',')
-                ) if 'VpcConfig' in function else None,
+                "VpcConfig": getVpcConfig(function, defaults=defaults),
                 "Role": Join("",
                              ["arn:aws:iam::",
                               Ref(
