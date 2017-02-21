@@ -4,8 +4,10 @@ from sns import sns
 from s3 import s3
 from kms import kms
 from iam import iam
+from apigateway import apigateway
 from dynamodb import dynamodb
 from troposphere import Template
+from cfn_flip import flip, to_yaml
 from boto3.dynamodb.conditions import Key
 from cStringIO import StringIO
 import ConfigParser
@@ -48,10 +50,12 @@ for item in protocols['Items']:
         t = kms(item, t, defaults=config)
     if item['Protocol'] == "dynamodb":
         t = dynamodb(item, t, defaults=config)
+    if item['Protocol'] == "apigateway":
+        t = apigateway(item, t, defaults=config)
     if item['Protocol'] == "iam":
         iamTemplate = Template()
         iamTemplate.add_version("2010-09-09")
         iamTemplate = iam(item, iamTemplate, defaults=config)
-        # print(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
+        print(to_yaml(iamTemplate.to_json(), clean_up=True))
 
-print(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
+print(to_yaml(t.to_json(), clean_up=True))

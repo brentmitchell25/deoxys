@@ -34,6 +34,8 @@ def resourceArn(resource):
         return "*"
     elif resource['Service'] == "s3":
         return "arn:aws:s3:::" +  resource["Resource"]
+    elif resource['Service'] == "execute-api":
+        return "arn:aws:execute-api:" +  resource["Resource"]
     else:
         return Join("", ["arn:aws:", resource["Service"], ":", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":", resource["Resource"]])
 

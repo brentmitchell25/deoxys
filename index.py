@@ -4,6 +4,7 @@ from sns import sns
 from s3 import s3
 from kms import kms
 from iam import iam
+from apigateway import apigateway
 from dynamodb import dynamodb
 from troposphere import Template
 from boto3.dynamodb.conditions import Key
@@ -55,6 +56,8 @@ def handler(event, context):
                     t = kms(item, t, defaults=config)
                 if item['Protocol'] == "dynamodb":
                     t = dynamodb(item, t, defaults=config)
+                if item['Protocol'] == "apigateway":
+                    t = apigateway(item, t, defaults=config)
                 if item['Protocol'] == "iam":
                     iamTemplate = Template()
                     iamTemplate.add_version("2010-09-09")
@@ -107,7 +110,6 @@ def handler(event, context):
                         )
 
         except Exception, e:
-            print("Unexpected error:", sys.exc_info()[0])
-            print("Couldn't do it: %s" % e)
+            print("Error: %s" % e)
             traceback.print_exc()
             return {}
