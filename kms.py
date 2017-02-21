@@ -2,6 +2,9 @@ from troposphere.kms import Alias, Key
 from troposphere import Ref, Join
 from awacs.aws import Action, Allow, Policy, Statement, Condition, AWSPrincipal, Bool
 import awacs.kms as KMS
+import re
+
+regex = re.compile('[^a-zA-Z]')
 
 
 def defaultKeyPolicy(admins, users):
@@ -79,7 +82,7 @@ def kms(item, template, defaults):
     if 'Keys' in item:
         for key in item['Keys']:
             kmsKey = template.add_resource(Key(
-                key["Alias"] + "Key",
+                regex.sub("", key["Alias"]) + "Key",
                 Description=key['Description'] if 'Description' in key else Ref('AWS::NoValue'),
                 Enabled=key['Enabled'] if 'Enabled' in key else defaults.getboolean('DEFAULT', 'KmsEnabled'),
                 EnableKeyRotation=key['EnableKeyRotation'] if 'EnableKeyRotation' in key else defaults.getboolean('DEFAULT',
@@ -88,7 +91,7 @@ def kms(item, template, defaults):
                 # DeletionPolicy=key['DeletionPolicy'] e
             ))
             alias = template.add_resource(Alias(
-                key["Alias"]  + "Alias",
+                regex.sub("", key["Alias"])  + "Alias",
                 AliasName=key["Alias"] if str(key["Alias"]).startswith("alias/")  else "alias/" + key["Alias"],
                 TargetKeyId=Ref(kmsKey),
                 # DeletionPolicy="Retain"
