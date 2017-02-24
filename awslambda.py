@@ -1,5 +1,7 @@
 from troposphere.awslambda import Function, Code, Permission, VPCConfig, Environment
 from troposphere.events import Rule, Target
+from troposphere.apigateway import RestApi, Resource, Method, Integration, Deployment, IntegrationResponse, \
+    MethodResponse
 from troposphere import FindInMap, GetAtt, Join, Output
 from troposphere import Parameter, Ref, Template
 import awacs.awslambda as awslambda
@@ -96,4 +98,127 @@ def awslambda(item, template, defaults):
                     FunctionName=Ref(resource)
                 ))
             template.add_resource(resource)
+
+            if 'Api' in function:
+                parameters = {
+                    'ApiName': function['Api']['ApiName'],
+                    'Path': function['Api']['Path'],
+                    'HttpMethod': function['Api']['HttpMethod'],
+                    'Asynchronous': function['Api']['Asynchronous'] if 'Asynchronous' in function['Api'] else None,
+                    'Role': function['Api']['Role'],
+                    'AuthorizationType': function['Api']['AuthorizationType'] if 'AuthorizationType' in function[
+                        'Api'] else None,
+                    'Uri': function['Api']['Uri'],
+                    'StageName': function['Api']['StageName'],
+                    'RequestParameters': function['Api']['RequestParameters'] if 'RequestParameters' in function[
+                        'Api'] else None,
+                    'IntegrationRequestTemplates': function['Api'][
+                        'IntegrationRequestTemplates'] if 'IntegrationRequestTemplates' in function[
+                        'Api'] else None,
+                }
+
+                restApi = RestApi(
+                    regex.sub("", parameters['ApiName']) + 'api',
+                    Name=parameters["ApiName"],
+                )
+                apiResource = Resource(
+                    regex.sub("", parameters['Path']) + 'Path',
+                    RestApiId=Ref(restApi),
+                    ParentId=GetAtt(restApi, "RootResourceId"),
+                    PathPart=str(parameters['Path']).replace("/", ""),
+                    DependsOn=regex.sub("", parameters['ApiName']) + 'api'
+                )
+
+                methodParameters = {}
+                if str(parameters['Asynchronous']).lower() == 'true':
+                    methodParameters = {
+                        "RestApiId": Ref(restApi),
+                        "ResourceId": Ref(apiResource),
+                        "HttpMethod": str(parameters['HttpMethod']).upper(),
+                        "AuthorizationType": parameters['AuthorizationType'],
+                        "Integration": Integration(
+                            Type="AWS",
+                            Credentials=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
+                                                  parameters['Role']]),
+                            IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+                            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:action/", parameters['Uri']]),
+                            IntegrationResponses=[
+                                IntegrationResponse(
+                                    StatusCode='200'
+                                )
+                            ],
+                            RequestParameters={
+                                "integration.request.header.X-Amz-Invocation-Type": '\'Event\''
+                            }
+                        ),
+                        "MethodResponses": [
+                            MethodResponse(
+                                StatusCode='200'
+                            )
+                        ],
+                        "DependsOn": regex.sub("", parameters['Path']) + 'Path'
+                    }
+                else:
+                    methodParameters = {
+                        "RestApiId": Ref(restApi),
+                        "ResourceId": Ref(apiResource),
+                        "HttpMethod": str(parameters['HttpMethod']).upper(),
+                        "AuthorizationType": parameters['AuthorizationType'],
+                        "Integration": Integration(
+                            Type="AWS",
+                            IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+                            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:path/", parameters['Uri']]),
+                            IntegrationResponses=[
+                                IntegrationResponse(
+                                    StatusCode='200'
+                                )
+                            ],
+                        ),
+                        "RequestParameters": parameters['RequestParameters'],
+                        "RequestTemplates": parameters['RequestParameters'],
+                        "MethodResponses": [
+                            MethodResponse(
+                                StatusCode='200'
+                            )
+                        ],
+                        "DependsOn": regex.sub("", parameters['Path']) + 'Path'
+                    }
+
+                method = Method(
+                    regex.sub("", parameters['HttpMethod']) + 'Method',
+                    **dict((k, v) for k, v in methodParameters.iteritems() if v is not None)
+                )
+
+                deployment = Deployment(
+                    regex.sub("", parameters['ApiName']) + 'Deployment',
+                    RestApiId=Ref(restApi),
+                    StageName=parameters['StageName'],
+                    DependsOn=regex.sub("", parameters['HttpMethod']) + 'Method',
+                )
+                template.add_resource(restApi)
+                template.add_resource(apiResource)
+                template.add_resource(method)
+                template.add_resource(deployment)
+
+                template.add_resource(Permission(
+                    regex.sub("", parameters['Path']) + 'Path' + 'Permission',
+                    Action="lambda:InvokeFunction",
+                    Principal="apigateway.amazonaws.com",
+                    SourceArn=Join("", ["arn:aws:execute-api:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":",
+                                        Ref(restApi), "/*/", parameters['HttpMethod'], "/",
+                                        str(parameters['Path']).replace("/", "")]),
+                    FunctionName=Ref(resource),
+                    DependsOn=regex.sub("", parameters['ApiName']) + 'Deployment'
+                ))
+
+                template.add_resource(Permission(
+                    regex.sub("", parameters['Path']) + 'Paths' + 'Permission',
+                    Action="lambda:InvokeFunction",
+                    Principal="apigateway.amazonaws.com",
+                    SourceArn=Join("", ["arn:aws:execute-api:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":",
+                                        Ref(restApi), "/*/", parameters['HttpMethod'], "/",
+                                        str(parameters['Path']).replace("/", "")]),
+                    FunctionName="RAILBourqueExport",
+                    DependsOn=regex.sub("", parameters['ApiName']) + 'Deployment'
+                ))
     return template
