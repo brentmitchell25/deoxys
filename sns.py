@@ -7,16 +7,16 @@ from awacs.aws import Policy, Statement, Principal, Action, Condition, Condition
 from awacs.aws import Allow, ArnEquals, AWSPrincipal, Condition
 import re
 import awacs.sqs as sqs
+from AWSObject import AWSObject
 import awacs.awslambda as awslambda
 
 regex = re.compile('[^a-zA-Z]')
 
 
-def sns(item, template, defaults):
+def sns(item, G, defaults):
     if 'Topics' in item:
         for topic in item['Topics']:
             subscriptions = []
-            dependsOn = []
             topicId = regex.sub('', topic['TopicName']) + item['Protocol']
             if 'CreateTopic' not in topic:
                 topic['CreateTopic'] = True
@@ -40,24 +40,27 @@ def sns(item, template, defaults):
                         Endpoint=endpoint,
                         Protocol=subscription["Protocol"]
                     )
-                    dependsOn.append(subscription["Endpoint"] + subscription["Protocol"])
                     subscriptions.append(sub)
 
                     if topic['CreateTopic'] == False:
-                        template.add_resource(SubscriptionResource(
-                            regex.sub('', topic['TopicName']) + regex.sub('', endpointId) + 'subscription',
+                        subscriptionResourceId = regex.sub('', topic['TopicName']) + regex.sub('',
+                                                                                               endpointId) + 'subscription'
+                        subscriptionResource = SubscriptionResource(
+                            subscriptionResourceId,
                             Endpoint=endpoint,
                             Protocol=subscription["Protocol"],
                             TopicArn=Join("",
                                           ["arn:aws:sns:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"),
                                            ":",
                                            topic['TopicName']])
-                        ))
+                        )
+                        subscriptionResourceObj = AWSObject(subscriptionResourceId, subscriptionResource)
+                        G.add_node(subscriptionResourceObj)
+
                     if subscription["Protocol"] == "lambda":
-                        template.add_resource(Permission(
-                            endpointId + regex.sub('', topic['TopicName']) + 'InvokePermission',
-                            DependsOn=[topicId, endpointId] if topic['CreateTopic'] == True else [
-                                endpointId],
+                        permissionId = endpointId + regex.sub('', topic['TopicName']) + 'InvokePermission'
+                        permission = Permission(
+                            permissionId,
                             Action="lambda:InvokeFunction",
                             Principal="sns.amazonaws.com",
                             SourceArn=Join("",
@@ -65,12 +68,16 @@ def sns(item, template, defaults):
                                             ":",
                                             topic['TopicName']]),
                             FunctionName=subscription["Endpoint"]
-                        ))
+                        )
+                        permissionObj = AWSObject(permissionId, permission)
+                        G.add_node(permissionObj)
+                        G.add_edge(AWSObject(endpointId), permissionObj)
+                        if str(topic['CreateTopic']) == 'true':
+                            G.add_edge(AWSObject(topicId))
                     elif subscription["Protocol"] == "sqs":
-                        template.add_resource(QueuePolicy(
-                            regex.sub('', topic['TopicName']) + 'QueuePolicy',
-                            DependsOn=[topicId, endpointId] if topic['CreateTopic'] == True else [
-                                endpointId],
+                        queuePolicyId = regex.sub('', topic['TopicName']) + 'QueuePolicy'
+                        queuePolicy = QueuePolicy(
+                            queuePolicyId,
                             PolicyDocument=Policy(
                                 Id=endpointId + topicId + 'Policy',
                                 Version='2012-10-17',
@@ -90,7 +97,13 @@ def sns(item, template, defaults):
                                 Join("", ["https://sqs.", Ref("AWS::Region"), ".amazonaws.com/",
                                           Ref("AWS::AccountId"), "/",
                                           subscription["Endpoint"]])]
-                        ))
+                        )
+
+                        queuePolObj = AWSObject(queuePolicyId, queuePolicy)
+                        G.add_node(queuePolObj)
+                        G.add_edge(AWSObject(endpoint), queuePolicy)
+                        if str(topic['CreateTopic']) == 'true':
+                            G.add_edge(AWSObject(topicId), queuePolicy)
 
             if topic['CreateTopic'] == True:
                 resource = Topic(
@@ -98,5 +111,5 @@ def sns(item, template, defaults):
                     TopicName=topic['TopicName'],
                     Subscription=subscriptions,
                 )
-                template.add_resource(resource)
-    return template
+                G.add_node(AWSObject(topicId, resource))
+    return G

@@ -1,11 +1,12 @@
 from troposphere.sqs import Queue, RedrivePolicy
 from troposphere import Ref, Join
+from AWSObject import AWSObject
 import re
 
 regex = re.compile('[^a-zA-Z]')
 
 
-def sqs(item, template, defaults):
+def sqs(item, G, defaults):
     if 'Queues' in item:
         for queue in item['Queues']:
             parameters = {
@@ -31,12 +32,11 @@ def sqs(item, template, defaults):
                 ) if 'DeadLetterQueue' in queue else None,
                 "VisibilityTimeout": str(
                     queue['VisibilityTimeout']) if 'VisibilityTimeout' in queue else None,
-                "DependsOn": str(queue['DeadLetterQueue']['Name']).replace("_", "") + item[
-                    'Protocol'] if "DeadLetterQueue" in queue else None
             }
+            queueId = regex.sub('', queue['QueueName']) + item['Protocol']
             resource = Queue(
-                regex.sub('', queue['QueueName']) + item['Protocol'],
+                queueId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-            template.add_resource(resource)
-    return template
+            G.add_node(AWSObject(queueId, resource))
+    return G

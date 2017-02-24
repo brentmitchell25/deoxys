@@ -4,6 +4,7 @@ from troposphere import Ref, Join, GetAtt
 from troposphere.awslambda import EventSourceMapping
 from awacs.aws import Principal
 import awacs.awslambda as awslambda
+from AWSObject import AWSObject
 import re
 
 regex = re.compile('[^a-zA-Z]')
@@ -17,7 +18,7 @@ def keySchema(keySchemas, defaults):
             keySchemas]
 
 
-def dynamodb(item, template, defaults):
+def dynamodb(item, G, defaults):
     if 'Tables' in item:
         for table in item['Tables']:
             parameters = {
@@ -80,7 +81,8 @@ def dynamodb(item, template, defaults):
                 tableId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-            template.add_resource(tableResource)
+            tableObj = AWSObject(tableId, tableResource)
+            G.add_node(tableObj)
 
             if "Triggers" in table:
                 for trigger in table["Triggers"]:
@@ -94,11 +96,15 @@ def dynamodb(item, template, defaults):
                                                                                                    "StartingPosition"),
                         "DependsOn": [tableId]
                     }
+                    eventSourceMappingId = regex.sub("", trigger[
+                            "FunctionName"] if "FunctionName" in trigger else trigger) + tableId + "EventSourceMapping"
                     eventSourceMapping = EventSourceMapping(
-                        regex.sub("", trigger[
-                            "FunctionName"] if "FunctionName" in trigger else trigger) + tableId + "EventSourceMapping",
+                        eventSourceMappingId,
                         **dict((k, v) for k, v in parameters.iteritems() if v is not None)
                     )
-                    template.add_resource(eventSourceMapping)
+                    eventSourceMappingObj = AWSObject(eventSourceMappingId, eventSourceMapping)
+                    G.add_node(tableObj, eventSourceMappingObj)
+                    functionObj = AWSObject(trigger["FunctionName"] if "FunctionName" in trigger else trigger)
+                    G.add_edge(functionObj, eventSourceMappingObj)
 
-    return template
+    return G

@@ -1,10 +1,10 @@
 from troposphere.s3 import Bucket, Tags
 import re
-
+from AWSObject import AWSObject
 regex = re.compile('[^a-zA-Z]')
 
 
-def s3(item, template, defaults):
+def s3(item, G, defaults):
     if 'Buckets' in item:
         for bucket in item['Buckets']:
             parameters = {
@@ -12,8 +12,11 @@ def s3(item, template, defaults):
                 "DeletionPolicy": bucket['DeletionPolicy'] if 'DeletionPolicy' in item else 'Retain'
             }
 
-            template.add_resource(Bucket(
-                regex.sub("", bucket['BucketName']) + 'bucket',
+            bucketId = regex.sub("", bucket['BucketName']) + 'bucket'
+            bucket = Bucket(
+                bucketId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
-            ))
-    return template
+            )
+
+            bucketObj = AWSObject(bucketId, bucket)
+            G.add_node(bucketObj)

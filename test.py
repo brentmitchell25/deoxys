@@ -15,6 +15,8 @@ import boto3
 import yaml
 import json
 import sys
+import networkx as nx
+import matplotlib.pyplot as plt
 import os
 import zipfile
 
@@ -30,32 +32,57 @@ dynamodbClient = boto3.resource('dynamodb')
 s3Client = boto3.client('s3')
 
 t = Template()
-
 t.add_version("2010-09-09")
+
 applicationName = "RAIL"
 protocols = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
 resources = {}
+G = nx.DiGraph()
+
+def dependsOn(node):
+    retVal = []
+    for u, v in G.edges_iter():
+        if node == v:
+            retVal.append(u.id)
+    return retVal
+
+def writeTemplate(template, graph):
+    for node in graph.nodes_iter():
+        depends = dependsOn(node)
+        if depends != []:
+            node.troposphereResource.__setattr__('DependsOn', dependsOn(node))
+        template.add_resource(node.troposphereResource)
+
 for item in protocols['Items']:
     if item['Protocol'] == "lambda":
-        t = awslambda(item, t, defaults=config)
+        awslambda(item, t, defaults=config, G=G)
     if item['Protocol'] == "sqs":
-        t = sqs(item, t, defaults=config)
+        sqs(item, G, defaults=config)
     if item['Protocol'] == "sns":
-        t = sns(item, t, defaults=config)
+        sns(item, G, defaults=config)
     if item['Protocol'] == 's3':
-        t = s3(item, t, defaults=config)
+        s3(item, G, defaults=config)
     if item['Protocol'] == "kms":
-        t = kms(item, t, defaults=config)
+        kms(item, G, defaults=config)
     if item['Protocol'] == "dynamodb":
-        t = dynamodb(item, t, defaults=config)
-    if item['Protocol'] == "apigateway":
-        t = apigateway(item, t, defaults=config)
+        dynamodb(item, G, defaults=config)
+    # if item['Protocol'] == "apigateway":
+    #     t = apigateway(item, t, defaults=config)
     if item['Protocol'] == "iam":
         iamTemplate = Template()
         iamTemplate.add_version("2010-09-09")
-        iamTemplate = iam(item, iamTemplate, defaults=config)
-        print(to_yaml(iamTemplate.to_json(), clean_up=True))
+        Giam = nx.DiGraph()
+        iam(item, Giam, defaults=config)
+        writeTemplate(iamTemplate, Giam)
+        # print(to_yaml(iamTemplate.to_json(), clean_up=True))
+
+
+# nx.draw(G,pos=nx.spring_layout(G))
+# plt.show()
+
+
+writeTemplate(t, G)
 
 print(to_yaml(t.to_json(), clean_up=True))
