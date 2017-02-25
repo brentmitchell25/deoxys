@@ -141,7 +141,7 @@ def awslambda(item, template, defaults):
                             Credentials=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
                                                   parameters['Role']]),
                             IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
-                            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:action/", parameters['Uri']]),
+                            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:path/", parameters['Uri']]),
                             IntegrationResponses=[
                                 IntegrationResponse(
                                     StatusCode='200'
