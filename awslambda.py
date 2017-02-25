@@ -5,15 +5,12 @@ from AWSObject import AWSObject
 from troposphere.events import Rule, Target
 from troposphere import FindInMap, GetAtt, Join, Output
 from troposphere import Parameter, Ref, Template
-import awacs.awslambda as awslambda
-from awacs.aws import Action, Principal
 import re
 
-regex = re.compile('[^a-zA-Z]')
+regex = re.compile('[^a-zA-Z0-9]')
 
 
 def getCode(function, defaults):
-    code = None
     if 'Code' in function and 'S3Bucket' in function['Code'] and 'S3Key' in function['Code']:
         code = Code(
             S3Bucket=function['Code']['S3Bucket'],
@@ -105,19 +102,23 @@ def awslambda(item, template, defaults, G):
                 perm = AWSObject(permissionId, permission)
                 G.add_node(poll)
                 G.add_node(perm)
-                G.add_edge(funcObj, poll)
-                G.add_edge(funcObj, perm)
-                G.add_edge(poll, perm)
+                G.add_edge(poll, funcObj)
+                G.add_edge(perm, funcObj)
+                G.add_edge(perm, poll)
             if 'Api' in function:
+                if str(function['Api']['Path']).startswith('/'):
+                    function['Api']['Path'] = str(function['Api']['Path'])[1:]
+                if str(function['Api']['Path']).endswith('/'):
+                    function['Api']['Path'] = str(function['Api']['Path'])[:-1]
                 parameters = {
                     'ApiName': function['Api']['ApiName'],
                     'Path': function['Api']['Path'],
                     'HttpMethod': function['Api']['HttpMethod'],
-                    'Asynchronous': function['Api']['Asynchronous'] if 'Asynchronous' in function['Api'] else None,
-                    'Role': function['Api']['Role'],
+                    'Asynchronous': function['Api']['Asynchronous'] if 'Asynchronous' in function['Api'] else 'false',
+                    'Role': function['Api']['Role'] if 'Role' in function['Api'] else None,
                     'AuthorizationType': function['Api']['AuthorizationType'] if 'AuthorizationType' in function[
-                        'Api'] else None,
-                    'Uri': function['Api']['Uri'],
+                        'Api'] else defaults.get('DEFAULT', 'AuthorizationType'),
+                    'Uri': function['Api']['Uri'] if 'Uri' in function['Api'] else None,
                     'StageName': function['Api']['StageName'],
                     'RequestParameters': function['Api']['RequestParameters'] if 'RequestParameters' in function[
                         'Api'] else None,
@@ -126,19 +127,35 @@ def awslambda(item, template, defaults, G):
                         'Api'] else None,
                 }
 
+                restApiId = regex.sub("", parameters['ApiName']) + 'api'
                 restApi = RestApi(
-                    regex.sub("", parameters['ApiName']) + 'api',
+                    restApiId,
                     Name=parameters["ApiName"],
                 )
-                apiResource = Resource(
-                    regex.sub("", parameters['Path']) + 'Path',
-                    RestApiId=Ref(restApi),
-                    ParentId=GetAtt(restApi, "RootResourceId"),
-                    PathPart=str(parameters['Path']).replace("/", ""),
-                    DependsOn=regex.sub("", parameters['ApiName']) + 'api'
-                )
+                restApiObj = AWSObject(restApiId, restApi)
 
-                methodParameters = {}
+                apiResourceObj = None
+                apiResource = None
+                for i, path in enumerate(str(parameters['Path']).split('/')):
+                    apiResourceId = regex.sub("", path) + 'Path'
+                    apiParameters = {
+                        "RestApiId":Ref(restApi),
+                        "ParentId": GetAtt(restApi, "RootResourceId") if i == 0 else Ref(apiResource),
+                        "PathPart": path.replace("/", ""),
+                    }
+                    apiResource = Resource(
+                        apiResourceId,
+                        **dict((k, v) for k, v in apiParameters.iteritems() if v is not None)
+                    )
+                    apiResourceObj = AWSObject(apiResourceId, apiResource)
+                    G.add_node(apiResourceObj)
+
+                    if i == 0:
+                        G.add_edge(apiResourceObj, restApiObj)
+                    else:
+                        prevPath = str(parameters['Path']).split('/')[i - 1]
+                        G.add_edge(apiResourceObj, AWSObject(regex.sub("", prevPath) + 'Path'))
+
                 if str(parameters['Asynchronous']).lower() == 'true':
                     methodParameters = {
                         "RestApiId": Ref(restApi),
@@ -176,7 +193,7 @@ def awslambda(item, template, defaults, G):
                         "Integration": Integration(
                             Type="AWS",
                             IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
-                            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:path/", parameters['Uri']]),
+                            Uri=Join("", ["arn:aws:apigateway:", Ref("AWS::Region"), ":lambda:path/2015-03-31/functions/", GetAtt(func, "Arn"), "/invocations"]),
                             IntegrationResponses=[
                                 IntegrationResponse(
                                     StatusCode='200'
@@ -193,42 +210,45 @@ def awslambda(item, template, defaults, G):
                         "DependsOn": regex.sub("", parameters['Path']) + 'Path'
                     }
 
+                methodId =regex.sub("", parameters['HttpMethod']) + 'Method'
                 method = Method(
-                    regex.sub("", parameters['HttpMethod']) + 'Method',
+                    methodId,
                     **dict((k, v) for k, v in methodParameters.iteritems() if v is not None)
                 )
+                methodObj = AWSObject(methodId, method)
 
+                deploymentId = regex.sub("", parameters['ApiName']) + 'Deployment'
+                deploymentParameters = {
+                    "RestApiId":Ref(restApi),
+                    "StageName":parameters['StageName'],
+                    "Description":parameters['Description'] if 'Description' in parameters else None,
+                    "DependsOn":regex.sub("", parameters['HttpMethod']) + 'Method',
+                }
                 deployment = Deployment(
-                    regex.sub("", parameters['ApiName']) + 'Deployment',
-                    RestApiId=Ref(restApi),
-                    StageName=parameters['StageName'],
-                    DependsOn=regex.sub("", parameters['HttpMethod']) + 'Method',
+                    deploymentId,
+                    **dict((k, v) for k, v in deploymentParameters.iteritems() if v is not None)
                 )
-                template.add_resource(restApi)
-                template.add_resource(apiResource)
-                template.add_resource(method)
-                template.add_resource(deployment)
+                deploymentObj = AWSObject(deploymentId, deployment)
 
-                template.add_resource(Permission(
-                    regex.sub("", parameters['Path']) + 'Path' + 'Permission',
+                permissionId = regex.sub("", parameters['Path']) + 'Path' + 'Permission'
+                permission = Permission(
+                    permissionId,
                     Action="lambda:InvokeFunction",
                     Principal="apigateway.amazonaws.com",
                     SourceArn=Join("", ["arn:aws:execute-api:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":",
                                         Ref(restApi), "/*/", parameters['HttpMethod'], "/",
-                                        str(parameters['Path']).replace("/", "")]),
+                                        str(parameters['Path'])]),
                     FunctionName=Ref(func),
                     DependsOn=regex.sub("", parameters['ApiName']) + 'Deployment'
-                ))
+                )
+                permissionObj = AWSObject(permissionId, permission)
 
-                template.add_resource(Permission(
-                    regex.sub("", parameters['Path']) + 'Paths' + 'Permission',
-                    Action="lambda:InvokeFunction",
-                    Principal="apigateway.amazonaws.com",
-                    SourceArn=Join("", ["arn:aws:execute-api:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":",
-                                        Ref(restApi), "/*/", parameters['HttpMethod'], "/",
-                                        str(parameters['Path']).replace("/", "")]),
-                    FunctionName="RAILBourqueExport",
-                    DependsOn=regex.sub("", parameters['ApiName']) + 'Deployment'
-                ))
+                G.add_node(methodObj)
+                G.add_node(permissionObj)
+                G.add_node(deploymentObj)
 
-            # template.add_resource(func)
+                G.add_edge(methodObj, apiResourceObj )
+                G.add_edge(deploymentObj, methodObj)
+                G.add_edge(permissionObj, restApiObj)
+                G.add_edge(permissionObj,methodObj)
+                G.add_edge(permissionObj, funcObj)

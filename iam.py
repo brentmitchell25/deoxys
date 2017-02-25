@@ -4,7 +4,7 @@ from troposphere import Ref, Join
 from AWSObject import AWSObject
 import re
 
-regex = re.compile('[^a-zA-Z]')
+regex = re.compile('[^a-zA-Z0-9]')
 
 def principalArn(principal):
     if principal["Owner"] == "User":

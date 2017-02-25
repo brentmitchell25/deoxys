@@ -7,7 +7,7 @@ import awacs.awslambda as awslambda
 from AWSObject import AWSObject
 import re
 
-regex = re.compile('[^a-zA-Z]')
+regex = re.compile('[^a-zA-Z0-9]')
 
 
 def keySchema(keySchemas, defaults):
@@ -105,6 +105,6 @@ def dynamodb(item, G, defaults):
                     eventSourceMappingObj = AWSObject(eventSourceMappingId, eventSourceMapping)
                     G.add_node(tableObj, eventSourceMappingObj)
                     functionObj = AWSObject(trigger["FunctionName"] if "FunctionName" in trigger else trigger)
-                    G.add_edge(functionObj, eventSourceMappingObj)
+                    G.add_edge(eventSourceMappingObj, functionObj)
 
     return G

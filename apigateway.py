@@ -1,7 +1,7 @@
 from troposphere.apigateway import ApiKey, RestApi
 import re
 
-regex = re.compile('[^a-zA-Z]')
+regex = re.compile('[^a-zA-Z0-9]')
 
 
 def apigateway(item, template, defaults):

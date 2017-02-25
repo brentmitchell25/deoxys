@@ -10,7 +10,7 @@ import awacs.sqs as sqs
 from AWSObject import AWSObject
 import awacs.awslambda as awslambda
 
-regex = re.compile('[^a-zA-Z]')
+regex = re.compile('[^a-zA-Z0-9]')
 
 
 def sns(item, G, defaults):
@@ -71,9 +71,9 @@ def sns(item, G, defaults):
                         )
                         permissionObj = AWSObject(permissionId, permission)
                         G.add_node(permissionObj)
-                        G.add_edge(AWSObject(endpointId), permissionObj)
+                        G.add_edge(permissionObj, AWSObject(endpointId))
                         if str(topic['CreateTopic']) == 'true':
-                            G.add_edge(AWSObject(topicId))
+                            G.add_edge(permissionObj, AWSObject(topicId))
                     elif subscription["Protocol"] == "sqs":
                         queuePolicyId = regex.sub('', topic['TopicName']) + 'QueuePolicy'
                         queuePolicy = QueuePolicy(
@@ -101,9 +101,9 @@ def sns(item, G, defaults):
 
                         queuePolObj = AWSObject(queuePolicyId, queuePolicy)
                         G.add_node(queuePolObj)
-                        G.add_edge(AWSObject(endpoint), queuePolicy)
+                        G.add_edge(queuePolicy, AWSObject(endpoint))
                         if str(topic['CreateTopic']) == 'true':
-                            G.add_edge(AWSObject(topicId), queuePolicy)
+                            G.add_edge(queuePolicy, AWSObject(topicId))
 
             if topic['CreateTopic'] == True:
                 resource = Topic(

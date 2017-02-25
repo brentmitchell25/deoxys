@@ -5,7 +5,7 @@ import awacs.kms as KMS
 from AWSObject import AWSObject
 import re
 
-regex = re.compile('[^a-zA-Z]')
+regex = re.compile('[^a-zA-Z0-9]')
 
 
 def defaultKeyPolicy(admins, users):
@@ -103,4 +103,4 @@ def kms(item, G, defaults):
             aliasObj = AWSObject(aliasId, alias)
             G.add_node(kmsKeyObj)
             G.add_node(aliasObj)
-            G.add_edge(kmsKeyObj, aliasObj)
+            G.add_edge(aliasObj, kmsKeyObj)

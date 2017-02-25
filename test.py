@@ -34,7 +34,7 @@ s3Client = boto3.client('s3')
 t = Template()
 t.add_version("2010-09-09")
 
-applicationName = "RAIL"
+applicationName = "Test"
 protocols = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
@@ -44,8 +44,8 @@ G = nx.DiGraph()
 def dependsOn(node):
     retVal = []
     for u, v in G.edges_iter():
-        if node == v:
-            retVal.append(u.id)
+        if node == u:
+            retVal.append(v.id)
     return retVal
 
 def writeTemplate(template, graph):
@@ -56,21 +56,25 @@ def writeTemplate(template, graph):
         template.add_resource(node.troposphereResource)
 
 for item in protocols['Items']:
-    if item['Protocol'] == "lambda":
+    if 'Protocol' in item:
+        item['Service'] = item['Protocol']
+    else:
+        item['Protocol'] = item['Service']
+    if item['Service'] == "lambda":
         awslambda(item, t, defaults=config, G=G)
-    if item['Protocol'] == "sqs":
+    if item['Service'] == "sqs":
         sqs(item, G, defaults=config)
-    if item['Protocol'] == "sns":
+    if item['Service'] == "sns":
         sns(item, G, defaults=config)
-    if item['Protocol'] == 's3':
+    if item['Service'] == "s3":
         s3(item, G, defaults=config)
-    if item['Protocol'] == "kms":
+    if item['Service'] == "kms":
         kms(item, G, defaults=config)
-    if item['Protocol'] == "dynamodb":
+    if item['Service'] == "dynamodb":
         dynamodb(item, G, defaults=config)
-    # if item['Protocol'] == "apigateway":
+    # if item['Protocol'] == "apigateway" or item['Service'] == "apigateway":
     #     t = apigateway(item, t, defaults=config)
-    if item['Protocol'] == "iam":
+    if item['Service'] == "iam":
         iamTemplate = Template()
         iamTemplate.add_version("2010-09-09")
         Giam = nx.DiGraph()
@@ -79,8 +83,8 @@ for item in protocols['Items']:
         # print(to_yaml(iamTemplate.to_json(), clean_up=True))
 
 
-# nx.draw(G,pos=nx.spring_layout(G))
-# plt.show()
+nx.draw(G, with_labels=True)
+plt.show()
 
 
 writeTemplate(t, G)

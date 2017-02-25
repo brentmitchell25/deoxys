@@ -1,7 +1,7 @@
 from troposphere.s3 import Bucket, Tags
 import re
 from AWSObject import AWSObject
-regex = re.compile('[^a-zA-Z]')
+regex = re.compile('[^a-zA-Z0-9]')
 
 
 def s3(item, G, defaults):
