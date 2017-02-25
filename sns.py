@@ -112,4 +112,3 @@ def sns(item, G, defaults):
                     Subscription=subscriptions,
                 )
                 G.add_node(AWSObject(topicId, resource, topic['TopicName']))
-    return G

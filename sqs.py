@@ -39,4 +39,3 @@ def sqs(item, G, defaults):
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
             G.add_node(AWSObject(queueId, resource, queue['QueueName']))
-    return G

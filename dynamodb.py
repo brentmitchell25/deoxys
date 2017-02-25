@@ -106,5 +106,3 @@ def dynamodb(item, G, defaults):
                     G.add_node(tableObj, eventSourceMappingObj)
                     functionObj = AWSObject(trigger["FunctionName"] if "FunctionName" in trigger else trigger)
                     G.add_edge(eventSourceMappingObj, functionObj)
-
-    return G
