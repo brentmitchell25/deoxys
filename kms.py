@@ -99,8 +99,8 @@ def kms(item, G, defaults):
                 TargetKeyId=Ref(kmsKey),
             )
 
-            kmsKeyObj = AWSObject(kmsKeyId, kmsKey)
-            aliasObj = AWSObject(aliasId, alias)
+            kmsKeyObj = AWSObject(kmsKeyId, kmsKey, "KMS-Key")
+            aliasObj = AWSObject(aliasId, alias, key["Alias"])
             G.add_node(kmsKeyObj)
             G.add_node(aliasObj)
             G.add_edge(aliasObj, kmsKeyObj)

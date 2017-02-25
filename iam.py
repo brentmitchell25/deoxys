@@ -91,5 +91,5 @@ def iam(item, G, defaults):
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
 
-            roleObj = AWSObject(roleId, role)
+            roleObj = AWSObject(roleId, role, role["RoleName"])
             G.add_node(roleObj)

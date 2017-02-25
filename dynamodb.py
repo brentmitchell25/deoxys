@@ -81,7 +81,7 @@ def dynamodb(item, G, defaults):
                 tableId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-            tableObj = AWSObject(tableId, tableResource)
+            tableObj = AWSObject(tableId, tableResource, table["TableName"])
             G.add_node(tableObj)
 
             if "Triggers" in table:
@@ -102,7 +102,7 @@ def dynamodb(item, G, defaults):
                         eventSourceMappingId,
                         **dict((k, v) for k, v in parameters.iteritems() if v is not None)
                     )
-                    eventSourceMappingObj = AWSObject(eventSourceMappingId, eventSourceMapping)
+                    eventSourceMappingObj = AWSObject(eventSourceMappingId, eventSourceMapping, "EventSourceMapping")
                     G.add_node(tableObj, eventSourceMappingObj)
                     functionObj = AWSObject(trigger["FunctionName"] if "FunctionName" in trigger else trigger)
                     G.add_edge(eventSourceMappingObj, functionObj)

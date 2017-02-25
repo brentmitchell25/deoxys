@@ -18,5 +18,5 @@ def s3(item, G, defaults):
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
 
-            bucketObj = AWSObject(bucketId, bucket)
+            bucketObj = AWSObject(bucketId, bucket, bucket['BucketName'])
             G.add_node(bucketObj)

@@ -132,7 +132,7 @@ def awslambda(item, template, defaults, G):
                     restApiId,
                     Name=parameters["ApiName"],
                 )
-                restApiObj = AWSObject(restApiId, restApi)
+                restApiObj = AWSObject(restApiId, restApi, parameters["ApiName"])
 
                 apiResourceObj = None
                 apiResource = None
@@ -147,7 +147,7 @@ def awslambda(item, template, defaults, G):
                         apiResourceId,
                         **dict((k, v) for k, v in apiParameters.iteritems() if v is not None)
                     )
-                    apiResourceObj = AWSObject(apiResourceId, apiResource)
+                    apiResourceObj = AWSObject(apiResourceId, apiResource, regex.sub("", path))
                     G.add_node(apiResourceObj)
 
                     if i == 0:
@@ -215,7 +215,7 @@ def awslambda(item, template, defaults, G):
                     methodId,
                     **dict((k, v) for k, v in methodParameters.iteritems() if v is not None)
                 )
-                methodObj = AWSObject(methodId, method)
+                methodObj = AWSObject(methodId, method, apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
 
                 deploymentId = regex.sub("", parameters['ApiName']) + 'Deployment'
                 deploymentParameters = {
@@ -228,7 +228,7 @@ def awslambda(item, template, defaults, G):
                     deploymentId,
                     **dict((k, v) for k, v in deploymentParameters.iteritems() if v is not None)
                 )
-                deploymentObj = AWSObject(deploymentId, deployment)
+                deploymentObj = AWSObject(deploymentId, deployment, parameters['StageName'] + "-Deployment")
 
                 permissionId = regex.sub("", parameters['Path']) + 'Path' + 'Permission'
                 permission = Permission(
@@ -241,7 +241,7 @@ def awslambda(item, template, defaults, G):
                     FunctionName=Ref(func),
                     DependsOn=regex.sub("", parameters['ApiName']) + 'Deployment'
                 )
-                permissionObj = AWSObject(permissionId, permission)
+                permissionObj = AWSObject(permissionId, permission, "InvokeFunctionPermission")
 
                 G.add_node(methodObj)
                 G.add_node(permissionObj)

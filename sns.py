@@ -54,7 +54,7 @@ def sns(item, G, defaults):
                                            ":",
                                            topic['TopicName']])
                         )
-                        subscriptionResourceObj = AWSObject(subscriptionResourceId, subscriptionResource)
+                        subscriptionResourceObj = AWSObject(subscriptionResourceId, subscriptionResource, subscription["Endpoint"] + "-Subscription")
                         G.add_node(subscriptionResourceObj)
 
                     if subscription["Protocol"] == "lambda":
@@ -69,7 +69,7 @@ def sns(item, G, defaults):
                                             topic['TopicName']]),
                             FunctionName=subscription["Endpoint"]
                         )
-                        permissionObj = AWSObject(permissionId, permission)
+                        permissionObj = AWSObject(permissionId, permission, "InvokeFunctionPermission")
                         G.add_node(permissionObj)
                         G.add_edge(permissionObj, AWSObject(endpointId))
                         if str(topic['CreateTopic']) == 'true':
@@ -99,7 +99,7 @@ def sns(item, G, defaults):
                                           subscription["Endpoint"]])]
                         )
 
-                        queuePolObj = AWSObject(queuePolicyId, queuePolicy)
+                        queuePolObj = AWSObject(queuePolicyId, queuePolicy, "QueuePolicy")
                         G.add_node(queuePolObj)
                         G.add_edge(queuePolicy, AWSObject(endpoint))
                         if str(topic['CreateTopic']) == 'true':
@@ -111,5 +111,5 @@ def sns(item, G, defaults):
                     TopicName=topic['TopicName'],
                     Subscription=subscriptions,
                 )
-                G.add_node(AWSObject(topicId, resource))
+                G.add_node(AWSObject(topicId, resource, topic['TopicName']))
     return G

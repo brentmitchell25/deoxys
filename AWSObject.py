@@ -2,7 +2,10 @@ class AWSObject(object):
     def __init__(self, id, troposphereResource=None, label=None):
         self.id = id
         self.troposphereResource = troposphereResource
-        self.label = id
+        if label is None:
+            self.label = id
+        else:
+            self.label = id
     def __key(self):
         return (self.id)
 
