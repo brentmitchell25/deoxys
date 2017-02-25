@@ -1,8 +1,8 @@
 class AWSObject(object):
-    def __init__(self, id, troposphereResource=None):
+    def __init__(self, id, troposphereResource=None, label=None):
         self.id = id
         self.troposphereResource = troposphereResource
-
+        self.label = id
     def __key(self):
         return (self.id)
 
@@ -13,4 +13,4 @@ class AWSObject(object):
         return(self.__key() == other.__key())
 
     def __str__(self):
-        return(self.id)
+        return(self.label)

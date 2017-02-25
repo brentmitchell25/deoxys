@@ -80,13 +80,10 @@ for item in protocols['Items']:
         Giam = nx.DiGraph()
         iam(item, Giam, defaults=config)
         writeTemplate(iamTemplate, Giam)
-        # print(to_yaml(iamTemplate.to_json(), clean_up=True))
+        print(to_yaml(iamTemplate.to_json(), clean_up=True))
 
-
-nx.draw(G, with_labels=True)
+pos=nx.nx_pydot.graphviz_layout(G,prog='dot')
+nx.draw(G,pos, with_labels=True)
 plt.show()
-
-
 writeTemplate(t, G)
-
 print(to_yaml(t.to_json(), clean_up=True))
