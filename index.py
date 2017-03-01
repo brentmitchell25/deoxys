@@ -37,9 +37,9 @@ def dependsOn(node, graph):
 
 def writeTemplate(template, graph):
     for node in graph.nodes_iter():
-        depends = dependsOn(node, graph)
+        depends = dependsOn(node, graph=graph)
         if depends != []:
-            node.troposphereResource.__setattr__('DependsOn', dependsOn(node))
+            node.troposphereResource.__setattr__('DependsOn', dependsOn(node, graph))
         template.add_resource(node.troposphereResource)
 
 def handler(event, context):
