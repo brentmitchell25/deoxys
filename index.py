@@ -11,9 +11,9 @@ from boto3.dynamodb.conditions import Key
 from cStringIO import StringIO
 import ConfigParser
 import boto3
-import yaml
+from cfn_flip import to_yaml
 import json
-import sys
+import networkx as nx
 import os
 import zipfile
 import traceback
@@ -28,14 +28,27 @@ else:
 dynamodbClient = boto3.resource('dynamodb')
 s3Client = boto3.client('s3')
 
+def dependsOn(node):
+    retVal = []
+    for u, v in G.edges_iter():
+        if node == u:
+            retVal.append(v.id)
+    return retVal
+
+def writeTemplate(template, graph):
+    for node in graph.nodes_iter():
+        depends = dependsOn(node)
+        if depends != []:
+            node.troposphereResource.__setattr__('DependsOn', dependsOn(node))
+        template.add_resource(node.troposphereResource)
 
 def handler(event, context):
     t = Template()
+    G = nx.DiGraph()
     iamTemplate = None
     for record in event['Records']:
 
         t.add_version("2010-09-09")
-        applicationName = ""
         try:
             print(record)
             applicationName = record['dynamodb']['NewImage']['ApplicationName']['S']
@@ -44,26 +57,31 @@ def handler(event, context):
             )
             resources = {}
             for item in protocols['Items']:
-                if item['Protocol'] == "lambda":
-                    t = awslambda(item, t, defaults=config)
-                if item['Protocol'] == "sqs":
-                    t = sqs(item, t, defaults=config)
-                if item['Protocol'] == "sns":
-                    t = sns(item, t, defaults=config)
-                if item['Protocol'] == 's3':
-                    t = s3(item, t, defaults=config)
-                if item['Protocol'] == "kms":
-                    t = kms(item, t, defaults=config)
-                if item['Protocol'] == "dynamodb":
-                    t = dynamodb(item, t, defaults=config)
-                if item['Protocol'] == "apigateway":
-                    t = apigateway(item, t, defaults=config)
+                if 'Protocol' in item:
+                    item['Service'] = item['Protocol']
+                else:
+                    item['Protocol'] = item['Service']
+                if item['Service'] == "lambda":
+                    awslambda(item, t, defaults=config, G=G)
+                if item['Service'] == "sqs":
+                    sqs(item, G, defaults=config)
+                if item['Service'] == "sns":
+                    sns(item, G, defaults=config)
+                if item['Service'] == "s3":
+                    s3(item, G, defaults=config)
+                if item['Service'] == "kms":
+                    kms(item, G, defaults=config)
+                if item['Service'] == "dynamodb":
+                    dynamodb(item, G, defaults=config)
                 if item['Protocol'] == "iam":
                     iamTemplate = Template()
                     iamTemplate.add_version("2010-09-09")
-                    iamTemplate = iam(item, iamTemplate, defaults=config)
+                    Giam = nx.DiGraph()
+                    iam(item, Giam, defaults=config)
+                    writeTemplate(iamTemplate, Giam)
 
-                template = StringIO(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
+                writeTemplate(t, G)
+                template = StringIO(to_yaml(t.to_json(), clean_up=True))
                 s3Client.put_object(
                     Bucket=config.get('DEFAULT', 'CloudformationBucket'),
                     Key=applicationName + "/" + applicationName + ".template",
@@ -71,7 +89,7 @@ def handler(event, context):
                 )
                 template.close()
 
-                template = StringIO(yaml.safe_dump(json.loads(t.to_json()), None, allow_unicode=True))
+                template = StringIO(to_yaml(t.to_json(), clean_up=True))
                 myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", 'w')
                 myzip.writestr(applicationName + ".template", template.read())
                 myzip.close()
@@ -85,7 +103,7 @@ def handler(event, context):
                     )
 
                 if iamTemplate is not None:
-                    template = StringIO(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
+                    template = StringIO(to_yaml(iamTemplate.to_json(), clean_up=True))
                     s3Client.put_object(
                         Bucket=config.get('DEFAULT', 'CloudformationBucket'),
                         Key=applicationName + "/" + applicationName + "-IAM.template",
@@ -93,7 +111,7 @@ def handler(event, context):
                     )
                     template.close()
 
-                    template = StringIO(yaml.safe_dump(json.loads(iamTemplate.to_json()), None, allow_unicode=True))
+                    template = StringIO(to_yaml(iamTemplate.to_json(), clean_up=True))
                     myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + "-IAM.zip",
                                             'w')
                     myzip.writestr(applicationName + "-IAM.template",

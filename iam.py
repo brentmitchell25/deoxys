@@ -86,10 +86,10 @@ def iam(item, G, defaults):
                 "RoleName": role["RoleName"]
             }
             roleId = regex.sub("", role['RoleName']) + "Role"
-            role = Role(
+            roleRes = Role(
                 roleId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
 
-            roleObj = AWSObject(roleId, role, role["RoleName"])
+            roleObj = AWSObject(roleId, roleRes, role["RoleName"])
             G.add_node(roleObj)

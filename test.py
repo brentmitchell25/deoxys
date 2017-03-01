@@ -34,7 +34,7 @@ s3Client = boto3.client('s3')
 t = Template()
 t.add_version("2010-09-09")
 
-applicationName = "Test"
+applicationName = "RAIL"
 protocols = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
@@ -82,8 +82,12 @@ for item in protocols['Items']:
         writeTemplate(iamTemplate, Giam)
         print(to_yaml(iamTemplate.to_json(), clean_up=True))
 
-pos=nx.nx_pydot.graphviz_layout(G,prog='dot')
-nx.draw(G,pos, with_labels=True)
+pos=nx.nx_pydot.graphviz_layout(G,prog='fdp')
+nx.draw(G,pos, with_labels=True, font_size=8)
+
+
+# nx.draw(G,pos=nx.spring_layout(G, scale=100), with_labels=True, font_size=8)
+
 plt.show()
 writeTemplate(t, G)
 print(to_yaml(t.to_json(), clean_up=True))
