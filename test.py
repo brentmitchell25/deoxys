@@ -39,7 +39,6 @@ protocols = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
 resources = {}
-G = nx.DiGraph()
 
 def dependsOn(node, graph):
     retVal = []
@@ -54,6 +53,8 @@ def writeTemplate(template, graph):
         if depends != []:
             node.troposphereResource.__setattr__('DependsOn', dependsOn(node, graph=graph))
         template.add_resource(node.troposphereResource)
+
+G = nx.DiGraph()
 
 for item in protocols['Items']:
     if 'Protocol' in item:
@@ -88,6 +89,6 @@ for item in protocols['Items']:
 
 # nx.draw(G,pos=nx.spring_layout(G, scale=100), with_labels=True, font_size=8)
 
-plt.show()
+# plt.show()
 writeTemplate(t, G)
 print(to_yaml(t.to_json(), clean_up=True))

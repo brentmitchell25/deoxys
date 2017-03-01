@@ -55,7 +55,6 @@ def handler(event, context):
             protocols = dynamodbClient.Table('Application').query(
                 KeyConditionExpression=Key('ApplicationName').eq(applicationName)
             )
-            resources = {}
             for item in protocols['Items']:
                 if 'Protocol' in item:
                     item['Service'] = item['Protocol']
@@ -78,54 +77,54 @@ def handler(event, context):
                     iamTemplate.add_version("2010-09-09")
                     Giam = nx.DiGraph()
                     iam(item, Giam, defaults=config)
-                    writeTemplate(iamTemplate, Giam)
 
-                writeTemplate(t, G)
-                template = StringIO(to_yaml(t.to_json(), clean_up=True))
+            writeTemplate(iamTemplate, Giam)
+            writeTemplate(t, G)
+            template = StringIO(to_yaml(t.to_json(), clean_up=True))
+            s3Client.put_object(
+                Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                Key=applicationName + "/" + applicationName + ".template",
+                Body=template.read()
+            )
+            template.close()
+
+            template = StringIO(to_yaml(t.to_json(), clean_up=True))
+            myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", 'w')
+            myzip.writestr(applicationName + ".template", template.read())
+            myzip.close()
+            template.close()
+
+            with open(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", "rb") as myzip:
                 s3Client.put_object(
                     Bucket=config.get('DEFAULT', 'CloudformationBucket'),
-                    Key=applicationName + "/" + applicationName + ".template",
+                    Key=applicationName + "/" + applicationName + ".zip",
+                    Body=myzip.read()
+                )
+
+            if iamTemplate is not None:
+                template = StringIO(to_yaml(iamTemplate.to_json(), clean_up=True))
+                s3Client.put_object(
+                    Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                    Key=applicationName + "/" + applicationName + "-IAM.template",
                     Body=template.read()
                 )
                 template.close()
 
-                template = StringIO(to_yaml(t.to_json(), clean_up=True))
-                myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", 'w')
-                myzip.writestr(applicationName + ".template", template.read())
+                template = StringIO(to_yaml(iamTemplate.to_json(), clean_up=True))
+                myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + "-IAM.zip",
+                                        'w')
+                myzip.writestr(applicationName + "-IAM.template",
+                               template.read())
                 myzip.close()
                 template.close()
 
-                with open(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", "rb") as myzip:
+                with open(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + "-IAM.zip",
+                          "rb") as myzip:
                     s3Client.put_object(
                         Bucket=config.get('DEFAULT', 'CloudformationBucket'),
-                        Key=applicationName + "/" + applicationName + ".zip",
+                        Key=applicationName + "/" + applicationName + "-IAM.zip",
                         Body=myzip.read()
                     )
-
-                if iamTemplate is not None:
-                    template = StringIO(to_yaml(iamTemplate.to_json(), clean_up=True))
-                    s3Client.put_object(
-                        Bucket=config.get('DEFAULT', 'CloudformationBucket'),
-                        Key=applicationName + "/" + applicationName + "-IAM.template",
-                        Body=template.read()
-                    )
-                    template.close()
-
-                    template = StringIO(to_yaml(iamTemplate.to_json(), clean_up=True))
-                    myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + "-IAM.zip",
-                                            'w')
-                    myzip.writestr(applicationName + "-IAM.template",
-                                   template.read())
-                    myzip.close()
-                    template.close()
-
-                    with open(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + "-IAM.zip",
-                              "rb") as myzip:
-                        s3Client.put_object(
-                            Bucket=config.get('DEFAULT', 'CloudformationBucket'),
-                            Key=applicationName + "/" + applicationName + "-IAM.zip",
-                            Body=myzip.read()
-                        )
 
         except Exception, e:
             print("Error: %s" % e)
