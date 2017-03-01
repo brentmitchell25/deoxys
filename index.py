@@ -28,16 +28,16 @@ else:
 dynamodbClient = boto3.resource('dynamodb')
 s3Client = boto3.client('s3')
 
-def dependsOn(node):
+def dependsOn(node, graph):
     retVal = []
-    for u, v in G.edges_iter():
+    for u, v in graph.edges_iter():
         if node == u:
             retVal.append(v.id)
     return retVal
 
 def writeTemplate(template, graph):
     for node in graph.nodes_iter():
-        depends = dependsOn(node)
+        depends = dependsOn(node, graph)
         if depends != []:
             node.troposphereResource.__setattr__('DependsOn', dependsOn(node))
         template.add_resource(node.troposphereResource)
