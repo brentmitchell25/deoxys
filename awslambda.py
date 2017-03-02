@@ -41,7 +41,6 @@ def getVpcConfig(function, defaults):
         )
     return vpcConfig
 
-
 def awslambda(item, template, defaults, G):
     if 'Functions' in item:
         for function in item['Functions']:
@@ -111,7 +110,7 @@ def awslambda(item, template, defaults, G):
                 if str(function['Api']['Path']).endswith('/'):
                     function['Api']['Path'] = str(function['Api']['Path'])[:-1]
                 parameters = {
-                    'ApiName': function['Api']['ApiName'],
+                    'RestApi': function['Api']['RestApi'],
                     'Path': function['Api']['Path'],
                     'HttpMethod': function['Api']['HttpMethod'],
                     'Asynchronous': function['Api']['Asynchronous'] if 'Asynchronous' in function['Api'] else 'false',
@@ -127,20 +126,26 @@ def awslambda(item, template, defaults, G):
                         'Api'] else None,
                 }
 
-                restApiId = regex.sub("", parameters['ApiName']) + 'api'
-                restApi = RestApi(
-                    restApiId,
-                    Name=parameters["ApiName"],
-                )
-                restApiObj = AWSObject(restApiId, restApi, parameters["ApiName"])
+                if 'Name' in parameters['RestApi']:
+                    restApiId = regex.sub("", function['Api']['RestApi']["Name"]) + 'api'
+                    restApi = RestApi(
+                        restApiId,
+                        Name=function['Api']['RestApi']["Name"],
+                    )
+                    restApiObj = AWSObject(restApiId, restApi,function['Api']['RestApi']["ApiName"])
+                    apiId = Ref(restApi)
+                    resourceId = GetAtt(restApi, "RootResourceId")
+                else:
+                    apiId = function['Api']['RestApi']['Id']
+                    resourceId = function['Api']['RestApi']["ResourceId"]
 
                 apiResourceObj = None
                 apiResource = None
                 for i, path in enumerate(str(parameters['Path']).split('/')):
                     apiResourceId = regex.sub("", path) + 'Path'
                     apiParameters = {
-                        "RestApiId":Ref(restApi),
-                        "ParentId": GetAtt(restApi, "RootResourceId") if i == 0 else Ref(apiResource),
+                        "RestApiId":str(apiId),
+                        "ParentId": str(resourceId) if i == 0 else Ref(apiResource),
                         "PathPart": path.replace("/", ""),
                     }
                     apiResource = Resource(
