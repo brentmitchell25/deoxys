@@ -73,8 +73,16 @@ def awslambda(item, template, defaults, G):
                 functionId + item['Protocol'],
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-            funcObj = AWSObject( functionId + item['Protocol'], func)
-            G.add_node(funcObj)
+
+            funcObj = AWSObject(functionId + item['Protocol'], func)
+
+            if G.has_node(AWSObject(functionId + item['Protocol'])):
+                for node in G.nodes():
+                    if str(node) == functionId + item['Protocol']:
+                        node.troposphereResource = func
+                        pass
+            else:
+                G.add_node(funcObj)
 
             if 'Poller' in function:
                 pollerId = functionId + 'Poller'
@@ -132,20 +140,20 @@ def awslambda(item, template, defaults, G):
                         restApiId,
                         Name=function['Api']['RestApi']["Name"],
                     )
-                    restApiObj = AWSObject(restApiId, restApi,function['Api']['RestApi']["ApiName"])
+                    restApiObj = AWSObject(restApiId, restApi,function['Api']['RestApi']["Name"])
                     apiId = Ref(restApi)
                     resourceId = GetAtt(restApi, "RootResourceId")
                 else:
-                    apiId = function['Api']['RestApi']['Id']
-                    resourceId = function['Api']['RestApi']["ResourceId"]
+                    apiId = str(function['Api']['RestApi']['Id'])
+                    resourceId = str(function['Api']['RestApi']["ResourceId"])
 
                 apiResourceObj = None
                 apiResource = None
                 for i, path in enumerate(str(parameters['Path']).split('/')):
                     apiResourceId = regex.sub("", path) + 'Path'
                     apiParameters = {
-                        "RestApiId":str(apiId),
-                        "ParentId": str(resourceId) if i == 0 else Ref(apiResource),
+                        "RestApiId":apiId,
+                        "ParentId": resourceId if i == 0 else Ref(apiResource),
                         "PathPart": path.replace("/", ""),
                     }
                     apiResource = Resource(
@@ -222,7 +230,7 @@ def awslambda(item, template, defaults, G):
                 )
                 methodObj = AWSObject(methodId, method, apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
 
-                deploymentId = regex.sub("", parameters['ApiName']) + 'Deployment'
+                deploymentId = regex.sub("", restApiId) + 'Deployment'
                 deploymentParameters = {
                     "RestApiId":Ref(restApi),
                     "StageName":parameters['StageName'],
@@ -244,7 +252,7 @@ def awslambda(item, template, defaults, G):
                                         Ref(restApi), "/*/", parameters['HttpMethod'], "/",
                                         str(parameters['Path'])]),
                     FunctionName=Ref(func),
-                    DependsOn=regex.sub("", parameters['ApiName']) + 'Deployment'
+                    DependsOn=regex.sub("", restApiId) + 'Deployment'
                 )
                 permissionObj = AWSObject(permissionId, permission, "InvokeFunctionPermission")
 
