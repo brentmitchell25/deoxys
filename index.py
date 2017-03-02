@@ -77,8 +77,8 @@ def handler(event, context):
                     iamTemplate.add_version("2010-09-09")
                     Giam = nx.DiGraph()
                     iam(item, Giam, defaults=config)
+                    writeTemplate(iamTemplate, Giam)
 
-            writeTemplate(iamTemplate, Giam)
             writeTemplate(t, G)
             template = StringIO(to_yaml(t.to_json(), clean_up=True))
             s3Client.put_object(
