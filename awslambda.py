@@ -225,7 +225,7 @@ def awslambda(item, template, defaults, G):
                         ],
                     }
 
-                methodId =regex.sub("", parameters['HttpMethod']) + 'Method'
+                methodId =regex.sub("", pathToMethod + parameters['HttpMethod']) + 'Method'
                 method = Method(
                     methodId,
                     **dict((k, v) for k, v in methodParameters.iteritems() if v is not None)

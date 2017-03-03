@@ -12,13 +12,12 @@ from boto3.dynamodb.conditions import Key
 from cStringIO import StringIO
 import ConfigParser
 import boto3
-import yaml
-import json
-import sys
+import re
 import networkx as nx
 import matplotlib.pyplot as plt
 import os
 import zipfile
+regex = re.compile('[^a-zA-Z0-9]')
 
 # Environment Variables
 
@@ -44,7 +43,7 @@ def dependsOn(node, graph):
     retVal = []
     for u, v in G.edges_iter():
         if node == u:
-            retVal.append(v.id)
+            retVal.append(regex.sub("", v.id))
     return retVal
 
 def writeTemplate(template, graph):
