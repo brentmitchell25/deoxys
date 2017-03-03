@@ -151,32 +151,33 @@ def awslambda(item, template, defaults, G):
                 apiResourceObj = None
                 apiResource = None
                 pathToMethod = ""
-                for i, path in enumerate(str(parameters['Path']).split('/')):
-                    pathToMethod = "/" + path
-                    apiResourceId = regex.sub("", path) + 'Path'
-                    apiParameters = {
-                        "RestApiId":apiId,
-                        "ParentId": resourceId if i == 0 else Ref(apiResource),
-                        "PathPart": path.replace("/", ""),
-                    }
-                    apiResource = Resource(
-                        apiResourceId,
-                        **dict((k, v) for k, v in apiParameters.iteritems() if v is not None)
-                    )
-                    apiResourceObj = AWSObject(apiResourceId, apiResource, regex.sub("", path))
-                    G.add_node(apiResourceObj)
+                if 'Path' in parameters:
+                    for i, path in enumerate(str(parameters['Path']).split('/')):
+                        pathToMethod = "/" + path
+                        apiResourceId = regex.sub("", path) + 'Path'
+                        apiParameters = {
+                            "RestApiId":apiId,
+                            "ParentId": resourceId if i == 0 else Ref(apiResource),
+                            "PathPart": path.replace("/", ""),
+                        }
+                        apiResource = Resource(
+                            apiResourceId,
+                            **dict((k, v) for k, v in apiParameters.iteritems() if v is not None)
+                        )
+                        apiResourceObj = AWSObject(apiResourceId, apiResource, regex.sub("", path))
+                        G.add_node(apiResourceObj)
 
-                    if i == 0:
-                        if restApiObj is not None:
-                            G.add_edge(apiResourceObj, restApiObj)
-                    else:
-                        prevPath = str(parameters['Path']).split('/')[i - 1]
-                        G.add_edge(apiResourceObj, AWSObject(regex.sub("", prevPath) + 'Path'))
+                        if i == 0:
+                            if restApiObj is not None:
+                                G.add_edge(apiResourceObj, restApiObj)
+                        else:
+                            prevPath = str(parameters['Path']).split('/')[i - 1]
+                            G.add_edge(apiResourceObj, AWSObject(regex.sub("", prevPath) + 'Path'))
 
                 if str(parameters['Asynchronous']).lower() == 'true':
                     methodParameters = {
                         "RestApiId": apiId,
-                        "ResourceId": resourceId,
+                        "ResourceId":  resourceId if apiResource is None else Ref(apiResource),
                         "HttpMethod": str(parameters['HttpMethod']).upper(),
                         "AuthorizationType": parameters['AuthorizationType'],
                         "Integration": Integration(
@@ -203,7 +204,7 @@ def awslambda(item, template, defaults, G):
                 else:
                     methodParameters = {
                         "RestApiId": apiId,
-                        "ResourceId": resourceId,
+                        "ResourceId": resourceId if apiResource is None else Ref(apiResource),
                         "HttpMethod": str(parameters['HttpMethod']).upper(),
                         "AuthorizationType": parameters['AuthorizationType'],
                         "Integration": Integration(
