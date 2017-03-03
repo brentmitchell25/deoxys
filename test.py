@@ -34,7 +34,7 @@ s3Client = boto3.client('s3')
 t = Template()
 t.add_version("2010-09-09")
 
-applicationName = "Test"
+applicationName = "UTIL"
 protocols = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
@@ -49,6 +49,7 @@ def dependsOn(node, graph):
 
 def writeTemplate(template, graph):
     for node in graph.nodes_iter():
+        print node
         depends = dependsOn(node, graph)
         if depends != []:
             node.troposphereResource.__setattr__('DependsOn', dependsOn(node, graph=graph))
@@ -81,13 +82,16 @@ for item in protocols['Items']:
         Giam = nx.DiGraph()
         iam(item, Giam, defaults=config)
         writeTemplate(iamTemplate, Giam)
-        print(to_yaml(iamTemplate.to_json(), clean_up=True))
+        # print(to_yaml(iamTemplate.to_json(), clean_up=True))
 
 # pos=nx.nx_pydot.graphviz_layout(G,prog='fdp')
 # nx.draw(G,pos, with_labels=True, font_size=8)
 
 
 # nx.draw(G,pos=nx.spring_layout(G, scale=100), with_labels=True, font_size=8)
+
+# for node in G.nodes():
+    # print node
 
 # plt.show()
 writeTemplate(t, G)

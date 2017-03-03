@@ -134,6 +134,7 @@ def awslambda(item, template, defaults, G):
                         'Api'] else None,
                 }
 
+                restApiObj = None
                 if 'Name' in parameters['RestApi']:
                     restApiId = regex.sub("", function['Api']['RestApi']["Name"]) + 'api'
                     restApi = RestApi(
@@ -164,15 +165,16 @@ def awslambda(item, template, defaults, G):
                     G.add_node(apiResourceObj)
 
                     if i == 0:
-                        G.add_edge(apiResourceObj, restApiObj)
+                        if restApiObj is not None:
+                            G.add_edge(apiResourceObj, restApiObj)
                     else:
                         prevPath = str(parameters['Path']).split('/')[i - 1]
                         G.add_edge(apiResourceObj, AWSObject(regex.sub("", prevPath) + 'Path'))
 
                 if str(parameters['Asynchronous']).lower() == 'true':
                     methodParameters = {
-                        "RestApiId": Ref(restApi),
-                        "ResourceId": Ref(apiResource),
+                        "RestApiId": apiId,
+                        "ResourceId": resourceId,
                         "HttpMethod": str(parameters['HttpMethod']).upper(),
                         "AuthorizationType": parameters['AuthorizationType'],
                         "Integration": Integration(
@@ -195,12 +197,11 @@ def awslambda(item, template, defaults, G):
                                 StatusCode='200'
                             )
                         ],
-                        "DependsOn": regex.sub("", parameters['Path']) + 'Path'
                     }
                 else:
                     methodParameters = {
-                        "RestApiId": Ref(restApi),
-                        "ResourceId": Ref(apiResource),
+                        "RestApiId": apiId,
+                        "ResourceId": resourceId,
                         "HttpMethod": str(parameters['HttpMethod']).upper(),
                         "AuthorizationType": parameters['AuthorizationType'],
                         "Integration": Integration(
@@ -220,7 +221,6 @@ def awslambda(item, template, defaults, G):
                                 StatusCode='200'
                             )
                         ],
-                        "DependsOn": regex.sub("", parameters['Path']) + 'Path'
                     }
 
                 methodId =regex.sub("", parameters['HttpMethod']) + 'Method'
@@ -230,12 +230,11 @@ def awslambda(item, template, defaults, G):
                 )
                 methodObj = AWSObject(methodId, method, apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
 
-                deploymentId = regex.sub("", restApiId) + 'Deployment'
+                deploymentId = regex.sub("", apiId) + 'Deployment'
                 deploymentParameters = {
-                    "RestApiId":Ref(restApi),
+                    "RestApiId":apiId,
                     "StageName":parameters['StageName'],
                     "Description":parameters['Description'] if 'Description' in parameters else None,
-                    "DependsOn":regex.sub("", parameters['HttpMethod']) + 'Method',
                 }
                 deployment = Deployment(
                     deploymentId,
@@ -249,10 +248,9 @@ def awslambda(item, template, defaults, G):
                     Action="lambda:InvokeFunction",
                     Principal="apigateway.amazonaws.com",
                     SourceArn=Join("", ["arn:aws:execute-api:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":",
-                                        Ref(restApi), "/*/", parameters['HttpMethod'], "/",
+                                        apiId, "/*/", parameters['HttpMethod'], "/",
                                         str(parameters['Path'])]),
                     FunctionName=Ref(func),
-                    DependsOn=regex.sub("", restApiId) + 'Deployment'
                 )
                 permissionObj = AWSObject(permissionId, permission, "InvokeFunctionPermission")
 
@@ -262,6 +260,8 @@ def awslambda(item, template, defaults, G):
 
                 G.add_edge(methodObj, apiResourceObj )
                 G.add_edge(deploymentObj, methodObj)
-                G.add_edge(permissionObj, restApiObj)
                 G.add_edge(permissionObj,methodObj)
                 G.add_edge(permissionObj, funcObj)
+                if restApiObj is not None:
+                    G.add_edge(permissionObj, restApiObj)
+
