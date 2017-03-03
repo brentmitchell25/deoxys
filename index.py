@@ -17,6 +17,10 @@ import networkx as nx
 import os
 import zipfile
 import traceback
+import re
+
+regex = re.compile('[^a-zA-Z0-9]')
+
 
 # Environment Variables
 config = ConfigParser.RawConfigParser()
@@ -32,7 +36,7 @@ def dependsOn(node, graph):
     retVal = []
     for u, v in graph.edges_iter():
         if node == u:
-            retVal.append(v.id)
+            retVal.append(regex.sub("", v.id))
     return retVal
 
 def writeTemplate(template, graph):
