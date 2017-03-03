@@ -150,7 +150,9 @@ def awslambda(item, template, defaults, G):
 
                 apiResourceObj = None
                 apiResource = None
+                pathToMethod = ""
                 for i, path in enumerate(str(parameters['Path']).split('/')):
+                    pathToMethod = "/" + path
                     apiResourceId = regex.sub("", path) + 'Path'
                     apiParameters = {
                         "RestApiId":apiId,
@@ -228,7 +230,7 @@ def awslambda(item, template, defaults, G):
                     methodId,
                     **dict((k, v) for k, v in methodParameters.iteritems() if v is not None)
                 )
-                methodObj = AWSObject(methodId, method, apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
+                methodObj = AWSObject(pathToMethod + methodId, method, apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
 
                 deploymentId = regex.sub("", apiId) + 'Deployment'
                 deploymentParameters = {

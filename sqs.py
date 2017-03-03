@@ -38,4 +38,14 @@ def sqs(item, G, defaults):
                 queueId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-            G.add_node(AWSObject(queueId, resource, queue['QueueName']))
+            queueObj = AWSObject(queueId, resource, queue['QueueName'])
+            if G.has_node(queueObj):
+                print 'HERE'
+                for node in G.nodes():
+                    if str(node) == queueId:
+                        node.troposphereResource = resource
+                        pass
+            else:
+                G.add_node(queueObj)
+            if 'DeadLetterQueue' in queue:
+                G.add_edge(queueObj,  AWSObject(regex.sub('', queue['DeadLetterQueue']['Name']) + item['Protocol']))

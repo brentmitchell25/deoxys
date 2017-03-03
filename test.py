@@ -49,7 +49,6 @@ def dependsOn(node, graph):
 
 def writeTemplate(template, graph):
     for node in graph.nodes_iter():
-        print node
         depends = dependsOn(node, graph)
         if depends != []:
             node.troposphereResource.__setattr__('DependsOn', dependsOn(node, graph=graph))
@@ -84,8 +83,8 @@ for item in protocols['Items']:
         writeTemplate(iamTemplate, Giam)
         # print(to_yaml(iamTemplate.to_json(), clean_up=True))
 
-# pos=nx.nx_pydot.graphviz_layout(G,prog='fdp')
-# nx.draw(G,pos, with_labels=True, font_size=8)
+pos=nx.nx_pydot.graphviz_layout(G,prog='fdp')
+nx.draw(G,pos, with_labels=True, font_size=8)
 
 
 # nx.draw(G,pos=nx.spring_layout(G, scale=100), with_labels=True, font_size=8)
@@ -93,6 +92,6 @@ for item in protocols['Items']:
 # for node in G.nodes():
     # print node
 
-# plt.show()
+plt.show()
 writeTemplate(t, G)
 print(to_yaml(t.to_json(), clean_up=True))
