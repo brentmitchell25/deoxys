@@ -55,7 +55,10 @@ def handler(event, context):
         t.add_version("2010-09-09")
         try:
             print(record)
-            applicationName = record['dynamodb']['NewImage']['ApplicationName']['S']
+            if 'dynamodb' in record:
+                applicationName = record['dynamodb']['NewImage']['ApplicationName']['S']
+            else:
+                applicationName = record['ApplicationName']
             protocols = dynamodbClient.Table('Application').query(
                 KeyConditionExpression=Key('ApplicationName').eq(applicationName)
             )
