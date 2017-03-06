@@ -71,7 +71,7 @@ def sns(item, G, defaults):
                         )
                         permissionObj = AWSObject(permissionId, permission, "InvokeFunctionPermission")
                         G.add_node(permissionObj)
-                        G.add_edge(permissionObj, AWSObject(endpointId))
+                        G.add_edge(permissionObj, AWSObject(regex.sub("",subscription["Endpoint"] + subscription["Protocol"])))
                         if str(topic['CreateTopic']) == 'true':
                             G.add_edge(permissionObj, AWSObject(topicId))
                     elif subscription["Protocol"] == "sqs":
@@ -101,7 +101,7 @@ def sns(item, G, defaults):
 
                         queuePolObj = AWSObject(queuePolicyId, queuePolicy, "QueuePolicy")
                         G.add_node(queuePolObj)
-                        G.add_edge(queuePolicy, AWSObject(endpoint))
+                        G.add_edge(queuePolObj, AWSObject(regex.sub("",subscription["Endpoint"] + subscription["Protocol"])))
                         if str(topic['CreateTopic']) == 'true':
                             G.add_edge(queuePolicy, AWSObject(topicId))
 
@@ -111,4 +111,11 @@ def sns(item, G, defaults):
                     TopicName=topic['TopicName'],
                     Subscription=subscriptions,
                 )
-                G.add_node(AWSObject(topicId, resource, topic['TopicName']))
+                topicObj = AWSObject(topicId, resource, topicId)
+                if G.has_node(topicObj):
+                    for node in G.nodes():
+                        if str(node) == topicId:
+                            node.troposphereResource = resource
+                            break
+                else:
+                    G.add_node(topicObj)

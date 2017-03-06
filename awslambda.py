@@ -80,7 +80,7 @@ def awslambda(item, template, defaults, G):
                 for node in G.nodes():
                     if str(node) == functionId + item['Protocol']:
                         node.troposphereResource = func
-                        pass
+                        break
             else:
                 G.add_node(funcObj)
 

@@ -40,12 +40,12 @@ def sqs(item, G, defaults):
             )
             queueObj = AWSObject(queueId, resource, queue['QueueName'])
             if G.has_node(queueObj):
-                print 'HERE'
                 for node in G.nodes():
                     if str(node) == queueId:
                         node.troposphereResource = resource
-                        pass
+                        break
             else:
                 G.add_node(queueObj)
             if 'DeadLetterQueue' in queue:
-                G.add_edge(queueObj,  AWSObject(regex.sub('', queue['DeadLetterQueue']['Name']) + item['Protocol']))
+                dlqObj = AWSObject(regex.sub('', queue['DeadLetterQueue']['Name']) + item['Protocol'])
+                G.add_edge(queueObj,  dlqObj)
