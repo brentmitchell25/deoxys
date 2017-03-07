@@ -34,7 +34,7 @@ def getVpcConfig(function, defaults):
             SecurityGroupIds=(defaults.get('DEFAULT', 'LambdaSecurityGroupIds')).split(','),
             SubnetIds=(defaults.get('DEFAULT', 'LambdaSubnetIds')).split(',')
         )
-    elif 'VpcConfig' in function:
+    elif 'VpcConfig' in function and str(function['VpcConfig']).lower().strip() != "false":
         vpcConfig = VPCConfig(
             SecurityGroupIds=function['VpcConfig']['SecurityGroupIds'].split(','),
             SubnetIds=function['VpcConfig']['SubnetIds'].split(',')
