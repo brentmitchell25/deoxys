@@ -5,6 +5,7 @@ from AWSObject import AWSObject
 from troposphere.events import Rule, Target
 from troposphere import FindInMap, GetAtt, Join, Output
 from troposphere import Parameter, Ref, Template
+import uuid
 import re
 
 regex = re.compile('[^a-zA-Z0-9]')
@@ -239,7 +240,7 @@ def awslambda(item, template, defaults, G):
                 deploymentParameters = {
                     "RestApiId":apiId,
                     "StageName":parameters['StageName'],
-                    "Description":parameters['Description'] if 'Description' in parameters else None,
+                    "Description":parameters['Description'] if 'Description' in parameters else str(uuid.uuid4()),
                 }
                 deployment = Deployment(
                     deploymentId,
