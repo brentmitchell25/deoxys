@@ -245,7 +245,7 @@ def awslambda(item, template, defaults, G):
                 )
                 deploymentObj = AWSObject(deploymentId, deployment, parameters['StageName'] + "-Deployment")
 
-                permissionId = regex.sub("", parameters['Path']) + 'Path' + 'Permission'
+                permissionId = regex.sub("", parameters['Path']) + parameters['HttpMethod'] + 'Path' + 'Permission'
                 permission = Permission(
                     permissionId,
                     Action="lambda:InvokeFunction",

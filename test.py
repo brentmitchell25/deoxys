@@ -83,8 +83,8 @@ for item in protocols['Items']:
         writeTemplate(iamTemplate, Giam)
         # print(to_yaml(iamTemplate.to_json(), clean_up=True))
 
-# pos=nx.nx_pydot.graphviz_layout(G,prog='fdp')
-# nx.draw(G,pos, with_labels=True, font_size=8)
+pos=nx.nx_pydot.graphviz_layout(G,prog='fdp')
+nx.draw(G,pos, with_labels=True, font_size=8)
 
 
 # nx.draw(G,pos=nx.spring_layout(G, scale=100), with_labels=True, font_size=8)
