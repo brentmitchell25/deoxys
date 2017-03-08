@@ -184,7 +184,8 @@ def awslambda(item, template, defaults, G):
                             Type="AWS",
                             Credentials=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
                                                   parameters['Role']]),
-                            IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+                            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+                            IntegrationHttpMethod="POST",
                             Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:action/", parameters['Uri']]),
                             IntegrationResponses=[
                                 IntegrationResponse(
@@ -209,7 +210,8 @@ def awslambda(item, template, defaults, G):
                         "AuthorizationType": parameters['AuthorizationType'],
                         "Integration": Integration(
                             Type="AWS",
-                            IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+                            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+                            IntegrationHttpMethod="POST",
                             Uri=Join("", ["arn:aws:apigateway:", Ref("AWS::Region"), ":lambda:path/2015-03-31/functions/", GetAtt(func, "Arn"), "/invocations"]),
                             IntegrationResponses=[
                                 IntegrationResponse(
