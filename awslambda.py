@@ -128,7 +128,10 @@ def awslambda(item, template, defaults, G):
                         'Api'] else defaults.get('DEFAULT', 'AuthorizationType'),
                     'Uri': function['Api']['Uri'] if 'Uri' in function['Api'] else None,
                     'StageName': function['Api']['StageName'],
-                    'RequestParameters': function['Api']['RequestParameters'] if 'RequestParameters' in function[
+                    'UrlQueryStringParamters': function['Api']['UrlQueryStringParamters'] if 'UrlQueryStringParamters' in function[
+                        'Api'] else None,
+                    'RequestParameters': function['Api'][
+                        'RequestParameters'] if 'RequestParameters' in function[
                         'Api'] else None,
                     'IntegrationRequestTemplates': function['Api'][
                         'IntegrationRequestTemplates'] if 'IntegrationRequestTemplates' in function[
@@ -220,7 +223,7 @@ def awslambda(item, template, defaults, G):
                                 )
                             ],
                         ),
-                        "RequestParameters": parameters['RequestParameters'],
+                        "RequestParameters": parameters['UrlQueryStringParamters'],
                         "RequestTemplates": parameters['RequestParameters'],
                         "MethodResponses": [
                             MethodResponse(
@@ -236,11 +239,11 @@ def awslambda(item, template, defaults, G):
                 )
                 methodObj = AWSObject(methodId, method, apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
 
-                deploymentId = regex.sub("", apiId) + 'Deployment'
+                deploymentId = regex.sub("", apiId + str(uuid.uuid4())) + 'Deployment'
                 deploymentParameters = {
                     "RestApiId":apiId,
                     "StageName":parameters['StageName'],
-                    "Description":parameters['Description'] if 'Description' in parameters else str(uuid.uuid4()),
+                    "Description":parameters['Description'] if 'Description' in parameters else None,
                 }
                 deployment = Deployment(
                     deploymentId,
