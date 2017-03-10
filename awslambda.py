@@ -140,7 +140,6 @@ def awslambda(item, template, defaults, G):
                         'IntegrationRequestTemplates'] if 'IntegrationRequestTemplates' in function[
                         'Api'] else None,
                 }
-                print(function['Api'])
 
                 restApiObj = None
                 if 'Name' in parameters['RestApi']:
@@ -233,8 +232,8 @@ def awslambda(item, template, defaults, G):
                             ],
                         ),
                         "RequestParameters": dict(
-                            ("method.request.querystring." + (v if 'Name' not in v else v['Name']), bool(strtobool(defaults.get('DEFAULT', 'QueryStringRequired')))
-                             if 'Required' not in v else bool(strtobool(str(v['Required']))))
+                            ("method.request.querystring." + (v if 'Name' not in v else v), bool(strtobool(defaults.get('DEFAULT', 'QueryStringRequired')))
+                             if 'Required' not in v else bool(strtobool(str(v))))
                             for v in parameters['UrlQueryStringParameters'])
                         if parameters['UrlQueryStringParameters'] != None else None,
                         "RequestTemplates": parameters['RequestParameters'],
