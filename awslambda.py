@@ -5,6 +5,7 @@ from AWSObject import AWSObject
 from troposphere.events import Rule, Target
 from troposphere import FindInMap, GetAtt, Join, Output
 from troposphere import Parameter, Ref, Template
+from distutils.util import strtobool
 import uuid
 import re
 
@@ -41,6 +42,7 @@ def getVpcConfig(function, defaults):
             SubnetIds=function['VpcConfig']['SubnetIds'].split(',')
         )
     return vpcConfig
+
 
 def awslambda(item, template, defaults, G):
     if 'Functions' in item:
@@ -106,7 +108,7 @@ def awslambda(item, template, defaults, G):
                     SourceArn=GetAtt(poller, "Arn"),
                     FunctionName=Ref(func)
                 )
-                poll = AWSObject(pollerId,poller)
+                poll = AWSObject(pollerId, poller)
                 perm = AWSObject(permissionId, permission)
                 G.add_node(poll)
                 G.add_node(perm)
@@ -128,7 +130,8 @@ def awslambda(item, template, defaults, G):
                         'Api'] else defaults.get('DEFAULT', 'AuthorizationType'),
                     'Uri': function['Api']['Uri'] if 'Uri' in function['Api'] else None,
                     'StageName': function['Api']['StageName'],
-                    'UrlQueryStringParamters': function['Api']['UrlQueryStringParamters'] if 'UrlQueryStringParamters' in function[
+                    'UrlQueryStringParameters': function['Api'][
+                        'UrlQueryStringParameters'] if 'UrlQueryStringParameters' in function[
                         'Api'] else None,
                     'RequestParameters': function['Api'][
                         'RequestParameters'] if 'RequestParameters' in function[
@@ -137,6 +140,7 @@ def awslambda(item, template, defaults, G):
                         'IntegrationRequestTemplates'] if 'IntegrationRequestTemplates' in function[
                         'Api'] else None,
                 }
+                print(function['Api'])
 
                 restApiObj = None
                 if 'Name' in parameters['RestApi']:
@@ -145,7 +149,7 @@ def awslambda(item, template, defaults, G):
                         restApiId,
                         Name=function['Api']['RestApi']["Name"],
                     )
-                    restApiObj = AWSObject(restApiId, restApi,function['Api']['RestApi']["Name"])
+                    restApiObj = AWSObject(restApiId, restApi, function['Api']['RestApi']["Name"])
                     apiId = Ref(restApi)
                     resourceId = GetAtt(restApi, "RootResourceId")
                 else:
@@ -160,7 +164,7 @@ def awslambda(item, template, defaults, G):
                         pathToMethod = "/" + path
                         apiResourceId = regex.sub("", path) + 'Path'
                         apiParameters = {
-                            "RestApiId":apiId,
+                            "RestApiId": apiId,
                             "ParentId": resourceId if i == 0 else Ref(apiResource),
                             "PathPart": path.replace("/", ""),
                         }
@@ -181,7 +185,7 @@ def awslambda(item, template, defaults, G):
                 if str(parameters['Asynchronous']).lower() == 'true':
                     methodParameters = {
                         "RestApiId": apiId,
-                        "ResourceId":  resourceId if apiResource is None else Ref(apiResource),
+                        "ResourceId": resourceId if apiResource is None else Ref(apiResource),
                         "HttpMethod": str(parameters['HttpMethod']).upper(),
                         "AuthorizationType": parameters['AuthorizationType'],
                         "Integration": Integration(
@@ -216,14 +220,23 @@ def awslambda(item, template, defaults, G):
                             Type="AWS",
                             # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
                             IntegrationHttpMethod="POST",
-                            Uri=Join("", ["arn:aws:apigateway:", Ref("AWS::Region"), ":lambda:path/2015-03-31/functions/", GetAtt(func, "Arn"), "/invocations"]),
+                            Uri=Join("",
+                                     ["arn:aws:apigateway:", Ref("AWS::Region"), ":lambda:path/2015-03-31/functions/",
+                                      GetAtt(func, "Arn"), "/invocations"]),
+                            RequestTemplates={
+                                "application/json": defaults.get('DEFAULT', 'BodyMappingTemplate')
+                            },
                             IntegrationResponses=[
                                 IntegrationResponse(
                                     StatusCode='200'
                                 )
                             ],
                         ),
-                        "RequestParameters": parameters['UrlQueryStringParamters'],
+                        "RequestParameters": dict(
+                            ("method.request.querystring." + (v if 'Name' not in v else v['Name']), bool(strtobool(defaults.get('DEFAULT', 'QueryStringRequired')))
+                             if 'Required' not in v else bool(strtobool(str(v['Required']))))
+                            for v in parameters['UrlQueryStringParameters'])
+                        if parameters['UrlQueryStringParameters'] != None else None,
                         "RequestTemplates": parameters['RequestParameters'],
                         "MethodResponses": [
                             MethodResponse(
@@ -232,18 +245,19 @@ def awslambda(item, template, defaults, G):
                         ],
                     }
 
-                methodId =regex.sub("", pathToMethod + parameters['HttpMethod']) + 'Method'
+                methodId = regex.sub("", pathToMethod + parameters['HttpMethod']) + 'Method'
                 method = Method(
                     methodId,
                     **dict((k, v) for k, v in methodParameters.iteritems() if v is not None)
                 )
-                methodObj = AWSObject(methodId, method, apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
+                methodObj = AWSObject(methodId, method,
+                                      apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
 
                 deploymentId = regex.sub("", apiId + str(uuid.uuid4())) + 'Deployment'
                 deploymentParameters = {
-                    "RestApiId":apiId,
-                    "StageName":parameters['StageName'],
-                    "Description":parameters['Description'] if 'Description' in parameters else None,
+                    "RestApiId": apiId,
+                    "StageName": parameters['StageName'],
+                    "Description": parameters['Description'] if 'Description' in parameters else None,
                 }
                 deployment = Deployment(
                     deploymentId,
@@ -267,10 +281,9 @@ def awslambda(item, template, defaults, G):
                 G.add_node(permissionObj)
                 G.add_node(deploymentObj)
 
-                G.add_edge(methodObj, apiResourceObj )
+                G.add_edge(methodObj, apiResourceObj)
                 G.add_edge(deploymentObj, methodObj)
-                G.add_edge(permissionObj,methodObj)
+                G.add_edge(permissionObj, methodObj)
                 G.add_edge(permissionObj, funcObj)
                 if restApiObj is not None:
                     G.add_edge(permissionObj, restApiObj)
-
