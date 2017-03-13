@@ -14,13 +14,13 @@ regex = re.compile('[^a-zA-Z0-9]')
 
 
 def getRequestTemplate(params):
-    template = "{"
+    template = "{\n"
     for idx, val in enumerate(params):
         template += "\"" + val + "\": \"$input.params('" + val + "')\""
         if idx < len(params) - 1:
             template += ",\n"
 
-    template += "}"
+    template += "\n}"
     retVal = {
         "application/json": template
     }
