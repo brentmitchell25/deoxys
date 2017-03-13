@@ -8,8 +8,88 @@ from troposphere import Parameter, Ref, Template
 from distutils.util import strtobool
 import uuid
 import re
+import json
 
 regex = re.compile('[^a-zA-Z0-9]')
+
+
+def getRequestTemplate(params):
+    template = {}
+    for i in params:
+        template[i] = '$input.params("' + i + '")'
+    retVal = {
+        "application/json": json.dumps(template)
+    }
+    return retVal
+
+
+def getIntegration(params, isAsynchronous, func):
+    if isAsynchronous and str(params['HttpMethod']).upper() == 'GET':
+        return Integration(
+            Type="AWS",
+            Credentials=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
+                                  params['Role']]),
+            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+            IntegrationHttpMethod="POST",
+            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:action/", params['Uri']]),
+            IntegrationResponses=[
+                IntegrationResponse(
+                    StatusCode='200'
+                )
+            ],
+            RequestTemplates=getRequestTemplate(params['UrlQueryStringParameters']) if str(
+                params['HttpMethod']).upper() == 'GET' else None,
+            RequestParameters={
+                "integration.request.header.X-Amz-Invocation-Type": '\'Event\''
+            }
+        )
+    elif isAsynchronous:
+        return Integration(
+            Type="AWS",
+            Credentials=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
+                                  params['Role']]),
+            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+            IntegrationHttpMethod="POST",
+            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:action/", params['Uri']]),
+            IntegrationResponses=[
+                IntegrationResponse(
+                    StatusCode='200'
+                )
+            ],
+            RequestParameters={
+                "integration.request.header.X-Amz-Invocation-Type": '\'Event\''
+            }
+        )
+    elif str(params['HttpMethod']).upper() == 'GET':
+        return Integration(
+            Type="AWS",
+            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+            IntegrationHttpMethod="POST",
+            Uri=Join("",
+                     ["arn:aws:apigateway:", Ref("AWS::Region"), ":lambda:path/2015-03-31/functions/",
+                      GetAtt(func, "Arn"), "/invocations"]),
+            RequestTemplates=getRequestTemplate(params['UrlQueryStringParameters']) if str(
+                params['HttpMethod']).upper() == 'GET' else None,
+            IntegrationResponses=[
+                IntegrationResponse(
+                    StatusCode='200'
+                )
+            ],
+        )
+    else:
+        return Integration(
+            Type="AWS",
+            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
+            IntegrationHttpMethod="POST",
+            Uri=Join("",
+                     ["arn:aws:apigateway:", Ref("AWS::Region"), ":lambda:path/2015-03-31/functions/",
+                      GetAtt(func, "Arn"), "/invocations"]),
+            IntegrationResponses=[
+                IntegrationResponse(
+                    StatusCode='200'
+                )
+            ],
+        )
 
 
 def getCode(function, defaults):
@@ -187,22 +267,7 @@ def awslambda(item, template, defaults, G):
                         "ResourceId": resourceId if apiResource is None else Ref(apiResource),
                         "HttpMethod": str(parameters['HttpMethod']).upper(),
                         "AuthorizationType": parameters['AuthorizationType'],
-                        "Integration": Integration(
-                            Type="AWS",
-                            Credentials=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
-                                                  parameters['Role']]),
-                            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
-                            IntegrationHttpMethod="POST",
-                            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:action/", parameters['Uri']]),
-                            IntegrationResponses=[
-                                IntegrationResponse(
-                                    StatusCode='200'
-                                )
-                            ],
-                            RequestParameters={
-                                "integration.request.header.X-Amz-Invocation-Type": '\'Event\''
-                            }
-                        ),
+                        "Integration": getIntegration(parameters, isAsynchronous=True, func=func),
                         "MethodResponses": [
                             MethodResponse(
                                 StatusCode='200'
@@ -215,24 +280,10 @@ def awslambda(item, template, defaults, G):
                         "ResourceId": resourceId if apiResource is None else Ref(apiResource),
                         "HttpMethod": str(parameters['HttpMethod']).upper(),
                         "AuthorizationType": parameters['AuthorizationType'],
-                        "Integration": Integration(
-                            Type="AWS",
-                            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
-                            IntegrationHttpMethod="POST",
-                            Uri=Join("",
-                                     ["arn:aws:apigateway:", Ref("AWS::Region"), ":lambda:path/2015-03-31/functions/",
-                                      GetAtt(func, "Arn"), "/invocations"]),
-                            RequestTemplates={
-                                "application/json": defaults.get('DEFAULT', 'BodyMappingTemplate')
-                            },
-                            IntegrationResponses=[
-                                IntegrationResponse(
-                                    StatusCode='200'
-                                )
-                            ],
-                        ),
+                        "Integration": getIntegration(parameters, isAsynchronous=False, func=func),
                         "RequestParameters": dict(
-                            ("method.request.querystring." + (v if 'Name' not in v else v), bool(strtobool(defaults.get('DEFAULT', 'QueryStringRequired')))
+                            ("method.request.querystring." + (v if 'Name' not in v else v),
+                             bool(strtobool(defaults.get('DEFAULT', 'QueryStringRequired')))
                              if 'Required' not in v else bool(strtobool(str(v))))
                             for v in parameters['UrlQueryStringParameters'])
                         if parameters['UrlQueryStringParameters'] != None else None,
