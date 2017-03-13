@@ -14,11 +14,15 @@ regex = re.compile('[^a-zA-Z0-9]')
 
 
 def getRequestTemplate(params):
-    template = {}
-    for i in params:
-        template[i] = '$input.params("' + i + '")'
+    template = "{"
+    for idx, val in enumerate(params):
+        template += "\"" + val + "\": \"$input.params('" + val + "')\""
+        if idx < len(params) - 1:
+            template += ",\n"
+
+    template += "}"
     retVal = {
-        "application/json": json.dumps(template)
+        "application/json": template
     }
     return retVal
 
@@ -294,7 +298,6 @@ def awslambda(item, template, defaults, G):
                             )
                         ],
                     }
-
                 methodId = regex.sub("", pathToMethod + parameters['HttpMethod']) + 'Method'
                 method = Method(
                     methodId,
