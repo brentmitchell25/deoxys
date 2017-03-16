@@ -27,15 +27,32 @@ def getRequestTemplate(params):
     return retVal
 
 
-def getIntegration(params, isAsynchronous, func):
-    if isAsynchronous and str(params['HttpMethod']).upper() == 'GET':
+def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
+    if isCors:
+        return Integration(
+            Type="MOCK",
+            IntegrationResponses=[
+                IntegrationResponse(
+                    StatusCode='200',
+                    ResponseParameters={
+                        "method.response.header.Access-Control-Allow-Headers": '\'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token\'',
+                        "method.response.header.Access-Control-Allow-Methods": '\'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT\'',
+                        "method.response.header.Access-Control-Allow-Origin": '\'*\'',
+                    }
+                )
+            ],
+            RequestTemplates={
+                "application/json": '{\"statusCode\": 200}'
+            },
+        )
+    elif isAsynchronous and str(params['HttpMethod']).upper() == 'GET':
         return Integration(
             Type="AWS",
             Credentials=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
                                   params['Role']]),
             # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
             IntegrationHttpMethod="POST",
-            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:action/", params['Uri']]),
+            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:path/", params['Uri']]),
             IntegrationResponses=[
                 IntegrationResponse(
                     StatusCode='200'
@@ -54,7 +71,7 @@ def getIntegration(params, isAsynchronous, func):
                                   params['Role']]),
             # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
             IntegrationHttpMethod="POST",
-            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:action/", params['Uri']]),
+            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:path/", params['Uri']]),
             IntegrationResponses=[
                 IntegrationResponse(
                     StatusCode='200'
@@ -223,6 +240,7 @@ def awslambda(item, template, defaults, G):
                     'IntegrationRequestTemplates': function['Api'][
                         'IntegrationRequestTemplates'] if 'IntegrationRequestTemplates' in function[
                         'Api'] else None,
+                    'Cors': function['Api']['Cors'] if 'Cors' in function['Api'] else None,
                 }
 
                 restApiObj = None
@@ -264,6 +282,32 @@ def awslambda(item, template, defaults, G):
                         else:
                             prevPath = str(parameters['Path']).split('/')[i - 1]
                             G.add_edge(apiResourceObj, AWSObject(regex.sub("", prevPath) + 'Path'))
+
+                corsMethodObj = None
+                if str(parameters['Cors']).lower() == 'true':
+                    corsMethodParameters = {
+                        "RestApiId": apiId,
+                        "ResourceId": resourceId if apiResource is None else Ref(apiResource),
+                        "HttpMethod": 'OPTIONS',
+                        "AuthorizationType": 'NONE',
+                        "Integration": getIntegration(parameters, isCors=True),
+                        "MethodResponses": [
+                            MethodResponse(
+                                StatusCode='200',
+                                ResponseParameters={
+                                    'method.response.header.Access-Control-Allow-Headers': True,
+                                    'method.response.header.Access-Control-Allow-Methods': True,
+                                    'method.response.header.Access-Control-Allow-Origin': True,
+                                }
+                            )
+                        ],
+                    }
+                    corsMethodId = regex.sub("", pathToMethod) + 'Cors'
+                    corsMethod = Method(
+                        corsMethodId,
+                        **dict((k, v) for k, v in corsMethodParameters.iteritems() if v is not None)
+                    )
+                    corsMethodObj = AWSObject(corsMethodId, corsMethod, pathToMethod + 'CorsMethod')
 
                 if str(parameters['Asynchronous']).lower() == 'true':
                     methodParameters = {
@@ -333,10 +377,16 @@ def awslambda(item, template, defaults, G):
                 G.add_node(methodObj)
                 G.add_node(permissionObj)
                 G.add_node(deploymentObj)
+                if corsMethodObj is not None:
+                    G.add_node(corsMethodObj)
 
                 G.add_edge(methodObj, apiResourceObj)
                 G.add_edge(deploymentObj, methodObj)
                 G.add_edge(permissionObj, methodObj)
                 G.add_edge(permissionObj, funcObj)
+
+                if corsMethodObj is not None:
+                    G.add_edge(corsMethodObj, apiResourceObj)
+                    G.add_edge(deploymentObj, corsMethodObj)
                 if restApiObj is not None:
                     G.add_edge(permissionObj, restApiObj)
