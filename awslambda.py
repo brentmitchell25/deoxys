@@ -29,9 +29,9 @@ def getRequestTemplate(params):
 
 def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
     if isCors:
-        return Integration(
-            Type="MOCK",
-            IntegrationResponses=[
+        integrationParameters = {
+            'Type': "MOCK",
+            'IntegrationResponses': [
                 IntegrationResponse(
                     StatusCode='200',
                     ResponseParameters={
@@ -41,76 +41,87 @@ def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
                     }
                 )
             ],
-            RequestTemplates={
+            'RequestTemplates': {
                 "application/json": '{\"statusCode\": 200}'
             },
-        )
+        }
     elif isAsynchronous and str(params['HttpMethod']).upper() == 'GET':
-        return Integration(
-            Type="AWS",
-            Credentials=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
-                                  params['Role']]),
-            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
-            IntegrationHttpMethod="POST",
-            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:path/", params['Uri']]),
-            IntegrationResponses=[
+        integrationParameters = {
+            'Type': "AWS",
+            'Credentials': Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
+                                     params['Role']]),
+            'IntegrationHttpMethod': "POST",
+            'Uri': Join("", ["arn:aws:apigateway:us-east-1:lambda:path/",
+                             params['Uri']]),
+            'IntegrationResponses': [
                 IntegrationResponse(
                     StatusCode='200'
                 )
             ],
-            RequestTemplates=getRequestTemplate(params['UrlQueryStringParameters']) if str(
+            'RequestTemplates': getRequestTemplate(
+                params['UrlQueryStringParameters']) if str(
                 params['HttpMethod']).upper() == 'GET' else None,
-            RequestParameters={
+            'RequestParameters': {
                 "integration.request.header.X-Amz-Invocation-Type": '\'Event\''
             }
-        )
+        }
     elif isAsynchronous:
-        return Integration(
-            Type="AWS",
-            Credentials=Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
-                                  params['Role']]),
+        integrationParameters = {
+            'Type': "AWS",
+            'Credentials': Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
+                                     params['Role']]),
             # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
-            IntegrationHttpMethod="POST",
-            Uri=Join("", ["arn:aws:apigateway:us-east-1:lambda:path/", params['Uri']]),
-            IntegrationResponses=[
+            'IntegrationHttpMethod': "POST",
+            'Uri': Join("", ["arn:aws:apigateway:us-east-1:lambda:path/",
+                             params['Uri']]),
+            'IntegrationResponses': [
                 IntegrationResponse(
                     StatusCode='200'
                 )
             ],
-            RequestParameters={
+            'RequestParameters': {
                 "integration.request.header.X-Amz-Invocation-Type": '\'Event\''
             }
-        )
+        }
     elif str(params['HttpMethod']).upper() == 'GET':
-        return Integration(
-            Type="AWS",
+        integrationParameters = {
+            'Type': "AWS",
             # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
-            IntegrationHttpMethod="POST",
-            Uri=Join("",
-                     ["arn:aws:apigateway:", Ref("AWS::Region"), ":lambda:path/2015-03-31/functions/",
-                      GetAtt(func, "Arn"), "/invocations"]),
-            RequestTemplates=getRequestTemplate(params['UrlQueryStringParameters']) if str(
-                params['HttpMethod']).upper() == 'GET' else None,
-            IntegrationResponses=[
+            'IntegrationHttpMethod': "POST",
+            'Uri': Join("",
+                        ["arn:aws:apigateway:", Ref("AWS::Region"),
+                         ":lambda:path/2015-03-31/functions/",
+                         GetAtt(func, "Arn"), "/invocations"]),
+            'RequestTemplates': getRequestTemplate(
+                params['UrlQueryStringParameters']) if str(
+                params['HttpMethod']).upper() == 'GET' and 'UrlQueryStringParameters' in params['HttpMethod'] else None,
+            'IntegrationResponses': [
                 IntegrationResponse(
                     StatusCode='200'
                 )
             ],
-        )
+        }
     else:
-        return Integration(
-            Type="AWS",
+        integrationParameters = {
+            'Type': "AWS",
             # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
-            IntegrationHttpMethod="POST",
-            Uri=Join("",
-                     ["arn:aws:apigateway:", Ref("AWS::Region"), ":lambda:path/2015-03-31/functions/",
-                      GetAtt(func, "Arn"), "/invocations"]),
-            IntegrationResponses=[
+            'IntegrationHttpMethod': "POST",
+            'Uri': Join("",
+                        ["arn:aws:apigateway:", Ref("AWS::Region"),
+                         ":lambda:path/2015-03-31/functions/",
+                         GetAtt(func, "Arn"), "/invocations"]),
+            'IntegrationResponses': [
                 IntegrationResponse(
                     StatusCode='200'
                 )
             ],
-        )
+        }
+
+    return Integration(
+        **dict((k, v) for k, v in integrationParameters.iteritems() if v is not None)
+    )
+
+
 
 
 def getCode(function, defaults):
@@ -386,6 +397,7 @@ def awslambda(item, template, defaults, G):
                 G.add_edge(permissionObj, funcObj)
 
                 if corsMethodObj is not None:
+                    print('HERE')
                     G.add_edge(corsMethodObj, apiResourceObj)
                     G.add_edge(deploymentObj, corsMethodObj)
                 if restApiObj is not None:
