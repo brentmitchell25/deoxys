@@ -33,7 +33,7 @@ s3Client = boto3.client('s3')
 t = Template()
 t.add_version("2010-09-09")
 
-applicationName = "ASH-TERMINAL-dev"
+applicationName = "ASH-PRICECURVE-dev"
 protocols = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )

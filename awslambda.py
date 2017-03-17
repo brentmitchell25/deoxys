@@ -86,7 +86,6 @@ def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
     elif str(params['HttpMethod']).upper() == 'GET':
         integrationParameters = {
             'Type': "AWS",
-            # IntegrationHttpMethod=str(parameters['HttpMethod']).upper(),
             'IntegrationHttpMethod': "POST",
             'Uri': Join("",
                         ["arn:aws:apigateway:", Ref("AWS::Region"),
@@ -94,7 +93,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
                          GetAtt(func, "Arn"), "/invocations"]),
             'RequestTemplates': getRequestTemplate(
                 params['UrlQueryStringParameters']) if str(
-                params['HttpMethod']).upper() == 'GET' and 'UrlQueryStringParameters' in params['HttpMethod'] else None,
+                params['HttpMethod']).upper() == 'GET' and 'UrlQueryStringParameters' in params else None,
             'IntegrationResponses': [
                 IntegrationResponse(
                     StatusCode='200'
