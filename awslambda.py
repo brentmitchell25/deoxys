@@ -360,7 +360,7 @@ def awslambda(item, template, defaults, G):
                 methodObj = AWSObject(methodId, method,
                                       apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
 
-                deploymentId = regex.sub("", apiId + str(uuid.uuid4())) + 'Deployment'
+                deploymentId = regex.sub("", str(apiId) + str(uuid.uuid4())) + 'Deployment'
                 deploymentParameters = {
                     "RestApiId": apiId,
                     "StageName": parameters['StageName'],
