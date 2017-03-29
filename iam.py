@@ -8,16 +8,16 @@ regex = re.compile('[^a-zA-Z0-9]')
 
 def principalArn(principal):
     if principal["Owner"] == "User":
-        return [AWSPrincipal(Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":user/", user])) for user in
-                principal["Name"]]
+        return AWSPrincipal([Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":user/", user]) for user in
+                principal["Name"]])
     elif principal["Owner"] == "CanonicalUser":
-        return [AWSPrincipal(Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":user/", user])) for user in
-                principal["Name"]]
+        return AWSPrincipal([Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":user/", user]) for user in
+                principal["Name"]])
     elif principal["Owner"] == "Account":
-        return [AWSPrincipal(Join("", ["arn:aws:iam::", accountId, ":root"])) for accountId in principal["Name"]]
+        return AWSPrincipal([Join("", ["arn:aws:iam::", accountId, ":root"]) for accountId in principal["Name"]])
     elif principal["Owner"] == "Role":
-        return [AWSPrincipal(Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":role/", role])) for role in
-                principal["Name"]]
+        return AWSPrincipal([Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":role/", role]) for role in
+                principal["Name"]])
     elif principal["Owner"] == "Service":
         return Principal("Service", [str(principal["Name"])])
     elif principal["Owner"] == "Federated":
@@ -36,7 +36,7 @@ def resourceArn(resource):
     elif resource['Service'] == "s3":
         return "arn:aws:s3:::" +  resource["Resource"]
     elif resource['Service'] == "execute-api":
-        return "arn:aws:execute-api:" +  resource["Resource"]
+        return "arn:aws:execute-api:" + resource["Resource"]
     elif resource['Service'] == "iam":
         return Join("", ["arn:aws:", resource["Service"], ":", Ref("AWS::AccountId"), ":",
                          resource["Resource"]])
