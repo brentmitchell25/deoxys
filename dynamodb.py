@@ -115,9 +115,8 @@ def dynamodb(item, G, defaults):
                     eventSourceMappingObj = AWSObject(eventSourceMappingId, eventSourceMapping, "EventSourceMapping")
                     G.add_node(eventSourceMappingObj)
 
-                    if G.has_node(AWSObject((trigger["FunctionName"] if "FunctionName" in trigger else trigger) + 'lambda')):
-                        functionObj = G[(trigger["FunctionName"] if "FunctionName" in trigger else trigger) + 'lambda']
-                    else:
-                        functionObj = AWSObject(trigger["FunctionName"] + 'lambda' if "FunctionName" in trigger else trigger + 'lambda')
+                    funcId = regex.sub("", trigger["FunctionName"] + 'lambda' if "FunctionName" in trigger else trigger + 'lambda')
+                    functionObj = AWSObject(funcId)
+
                     G.add_edge(eventSourceMappingObj, tableObj)
                     G.add_edge(eventSourceMappingObj, functionObj)

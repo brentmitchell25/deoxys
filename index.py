@@ -132,8 +132,13 @@ def handler(event, context):
                         Key=applicationName + "/" + applicationName + "-IAM.zip",
                         Body=myzip.read()
                     )
+                return {
+                    'status': 'success',
+                }
 
         except Exception, e:
             print("Error: %s" % e)
             traceback.print_exc()
-            return {}
+            return {
+                'status': 'error',
+            }
