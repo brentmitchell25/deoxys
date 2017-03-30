@@ -54,10 +54,10 @@ def handler(event, context):
     iamTemplate = None
     retVal = []
     for record in event['Records']:
-
+        print(record)
         t.add_version("2010-09-09")
+        applicationName = ''
         try:
-            print(record)
             if 'dynamodb' in record:
                 applicationName = record['dynamodb']['NewImage']['ApplicationName']['S']
             else:
@@ -137,7 +137,7 @@ def handler(event, context):
                     )
             retVal.append({
                 'status': 'success',
-                'applicationName': record['dynamodb']['NewImage']['ApplicationName']['S'],
+                'applicationName': applicationName,
             })
 
         except Exception, e:
@@ -145,7 +145,7 @@ def handler(event, context):
             traceback.print_exc()
             retVal.append({
                 'status': 'error',
-                'applicationName': record['dynamodb']['NewImage']['ApplicationName']['S'],
+                'applicationName': applicationName,
                 'reason': traceback.format_exc(),
             })
 
