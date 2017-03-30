@@ -50,6 +50,7 @@ def handler(event, context):
     t = Template()
     G = nx.DiGraph()
     iamTemplate = None
+    retVal = []
     for record in event['Records']:
 
         t.add_version("2010-09-09")
@@ -132,13 +133,15 @@ def handler(event, context):
                         Key=applicationName + "/" + applicationName + "-IAM.zip",
                         Body=myzip.read()
                     )
-                return {
+                retVal.append({
                     'status': 'success',
-                }
+                })
 
         except Exception, e:
             print("Error: %s" % e)
             traceback.print_exc()
-            return {
+            retVal.append({
                 'status': 'error',
-            }
+            })
+
+    return retVal
