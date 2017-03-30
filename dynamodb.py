@@ -37,8 +37,6 @@ def getProjection(projection):
 def dynamodb(item, G, defaults):
     if 'Tables' in item:
         for table in item['Tables']:
-            if "GlobalSecondaryIndexes" in table:
-                print(table['GlobalSecondaryIndexes'])
             parameters = {
                 "AttributeDefinitions": [AttributeDefinition(AttributeName=attribute["AttributeName"],
                                                              AttributeType=attribute[
