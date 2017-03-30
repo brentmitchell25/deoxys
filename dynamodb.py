@@ -17,10 +17,28 @@ def keySchema(keySchemas, defaults):
             keySchema in
             keySchemas]
 
+def getProjection(projection):
+    if "NonKeyAttributes" in projection and "ProjectionType" in projection:
+        retVal = Projection(
+            NonKeyAttributes=projection["NonKeyAttributes"],
+            ProjectionType=projection["ProjectionType"],
+        )
+    elif "NonKeyAttributes" in projection:
+        retVal = Projection(
+            NonKeyAttributes=projection["NonKeyAttributes"],
+        )
+    else:
+        retVal = Projection(
+            ProjectionType=projection["ProjectionType"],
+        )
+    return retVal
+
 
 def dynamodb(item, G, defaults):
     if 'Tables' in item:
         for table in item['Tables']:
+            if "GlobalSecondaryIndexes" in table:
+                print(table['GlobalSecondaryIndexes'])
             parameters = {
                 "AttributeDefinitions": [AttributeDefinition(AttributeName=attribute["AttributeName"],
                                                              AttributeType=attribute[
@@ -30,10 +48,7 @@ def dynamodb(item, G, defaults):
                 "GlobalSecondaryIndexes": [GlobalSecondaryIndex(
                     IndexName=globalSecondaryIndex["IndexName"],
                     KeySchema=keySchema(globalSecondaryIndex["KeySchema"], defaults=defaults),
-                    Projection=Projection(
-                        NonKeyAttributes=globalSecondaryIndex["Projection"]["NonKeyAttributes"],
-                        ProjectionType=globalSecondaryIndex["Projection"]["ProjectionType"]
-                    ),
+                    Projection=getProjection(globalSecondaryIndex["Projection"]),
                     ProvisionedThroughput=ProvisionedThroughput(
                         ReadCapacityUnits=int(globalSecondaryIndex["ProvisionedThroughput"][
                                                   "ReadCapacityUnits"] if "ProvisionedThroughput" in globalSecondaryIndex and "ReadCapacityUnits" in
@@ -46,16 +61,13 @@ def dynamodb(item, G, defaults):
                                                                                                                                     "ProvisionedThroughput"] else
                                                defaults.get("DEFAULT", "WriteCapacityUnits"))
                     )
-                ) for globalSecondaryIndex in table] if "GlobalSecondaryIndexes" in table else None,
+                ) for globalSecondaryIndex in table["GlobalSecondaryIndexes"]] if "GlobalSecondaryIndexes" in table else None,
                 "KeySchema": keySchema(table["KeySchema"], defaults=defaults),
                 "LocalSecondaryIndexes": [LocalSecondaryIndex(
                     IndexName=localSecondaryIndex["IndexName"],
                     KeySchema=keySchema(localSecondaryIndex["KeySchema"], defaults=defaults),
-                    Projection=Projection(
-                        NonKeyAttributes=localSecondaryIndex["Projection"]["NonKeyAttributes"],
-                        ProjectionType=localSecondaryIndex["Projection"]["ProjectionType"]
-                    )
-                ) for localSecondaryIndex in table] if "LocalSecondaryIndexes" in table else None,
+                    Projection=getProjection(localSecondaryIndex["Projection"]),
+                ) for localSecondaryIndex in table["LocalSecondaryIndexes"]] if "LocalSecondaryIndexes" in table else None,
                 "ProvisionedThroughput": ProvisionedThroughput(
                     ReadCapacityUnits=int(table["ProvisionedThroughput"][
                                               "ReadCapacityUnits"] if "ProvisionedThroughput" in table and "ReadCapacityUnits" in

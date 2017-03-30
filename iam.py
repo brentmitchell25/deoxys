@@ -62,9 +62,6 @@ def getStatement(statement):
     }
     return Statement(**dict((k, v) for k, v in parameters.iteritems() if v is not None))
 
-
-
-
 def policy(statements):
     return Policy(
         Statement=[getStatement(statement) for statement in statements["Statements"]]
