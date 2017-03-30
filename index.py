@@ -135,11 +135,18 @@ def handler(event, context):
                         Key=applicationName + "/" + applicationName + "-IAM.zip",
                         Body=myzip.read()
                     )
-            retVal.append({'status': 'success'})
+            retVal.append({
+                'status': 'success',
+                'applicationName': record['dynamodb']['NewImage']['ApplicationName']['S'],
+            })
 
         except Exception, e:
             print("Error: %s" % e)
             traceback.print_exc()
-            retVal.append({'status': 'error'})
+            retVal.append({
+                'status': 'error',
+                'applicationName': record['dynamodb']['NewImage']['ApplicationName']['S'],
+                'reason': traceback.format_exc(),
+            })
 
     return retVal
