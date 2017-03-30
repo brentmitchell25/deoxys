@@ -396,7 +396,6 @@ def awslambda(item, template, defaults, G):
                 G.add_edge(permissionObj, funcObj)
 
                 if corsMethodObj is not None:
-                    print('HERE')
                     G.add_edge(corsMethodObj, apiResourceObj)
                     G.add_edge(deploymentObj, corsMethodObj)
                 if restApiObj is not None:
