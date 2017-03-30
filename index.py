@@ -21,7 +21,6 @@ import re
 
 regex = re.compile('[^a-zA-Z0-9]')
 
-
 # Environment Variables
 config = ConfigParser.RawConfigParser()
 if os.path.exists("defaults.ini"):
@@ -32,6 +31,7 @@ else:
 dynamodbClient = boto3.resource('dynamodb')
 s3Client = boto3.client('s3')
 
+
 def dependsOn(node, graph):
     retVal = []
     for u, v in graph.edges_iter():
@@ -39,12 +39,14 @@ def dependsOn(node, graph):
             retVal.append(regex.sub("", v.id))
     return retVal
 
+
 def writeTemplate(template, graph):
     for node in graph.nodes_iter():
         depends = dependsOn(node, graph=graph)
         if depends != []:
             node.troposphereResource.__setattr__('DependsOn', dependsOn(node, graph))
         template.add_resource(node.troposphereResource)
+
 
 def handler(event, context):
     t = Template()
@@ -133,15 +135,13 @@ def handler(event, context):
                         Key=applicationName + "/" + applicationName + "-IAM.zip",
                         Body=myzip.read()
                     )
-                retVal.append({
-                    'status': 'success',
-                })
+                status = {'status': 'success'}
+                retVal.append(status)
 
         except Exception, e:
             print("Error: %s" % e)
             traceback.print_exc()
-            retVal.append({
-                'status': 'error',
-            })
+            status = {'status': 'error'}
+            retVal.append(status)
 
     return retVal
