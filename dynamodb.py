@@ -4,9 +4,10 @@ from troposphere import Ref, Join, GetAtt
 from troposphere.awslambda import EventSourceMapping
 from awacs.aws import Principal
 import awacs.awslambda as awslambda
+from AWSObject import AWSObject
 import re
 
-regex = re.compile('[^a-zA-Z]')
+regex = re.compile('[^a-zA-Z0-9]')
 
 
 def keySchema(keySchemas, defaults):
@@ -16,8 +17,24 @@ def keySchema(keySchemas, defaults):
             keySchema in
             keySchemas]
 
+def getProjection(projection):
+    if "NonKeyAttributes" in projection and "ProjectionType" in projection:
+        retVal = Projection(
+            NonKeyAttributes=projection["NonKeyAttributes"],
+            ProjectionType=projection["ProjectionType"],
+        )
+    elif "NonKeyAttributes" in projection:
+        retVal = Projection(
+            NonKeyAttributes=projection["NonKeyAttributes"],
+        )
+    else:
+        retVal = Projection(
+            ProjectionType=projection["ProjectionType"],
+        )
+    return retVal
 
-def dynamodb(item, template, defaults):
+
+def dynamodb(item, G, defaults):
     if 'Tables' in item:
         for table in item['Tables']:
             parameters = {
@@ -29,10 +46,7 @@ def dynamodb(item, template, defaults):
                 "GlobalSecondaryIndexes": [GlobalSecondaryIndex(
                     IndexName=globalSecondaryIndex["IndexName"],
                     KeySchema=keySchema(globalSecondaryIndex["KeySchema"], defaults=defaults),
-                    Projection=Projection(
-                        NonKeyAttributes=globalSecondaryIndex["Projection"]["NonKeyAttributes"],
-                        ProjectionType=globalSecondaryIndex["Projection"]["ProjectionType"]
-                    ),
+                    Projection=getProjection(globalSecondaryIndex["Projection"]),
                     ProvisionedThroughput=ProvisionedThroughput(
                         ReadCapacityUnits=int(globalSecondaryIndex["ProvisionedThroughput"][
                                                   "ReadCapacityUnits"] if "ProvisionedThroughput" in globalSecondaryIndex and "ReadCapacityUnits" in
@@ -45,16 +59,13 @@ def dynamodb(item, template, defaults):
                                                                                                                                     "ProvisionedThroughput"] else
                                                defaults.get("DEFAULT", "WriteCapacityUnits"))
                     )
-                ) for globalSecondaryIndex in table] if "GlobalSecondaryIndexes" in table else None,
+                ) for globalSecondaryIndex in table["GlobalSecondaryIndexes"]] if "GlobalSecondaryIndexes" in table else None,
                 "KeySchema": keySchema(table["KeySchema"], defaults=defaults),
                 "LocalSecondaryIndexes": [LocalSecondaryIndex(
                     IndexName=localSecondaryIndex["IndexName"],
                     KeySchema=keySchema(localSecondaryIndex["KeySchema"], defaults=defaults),
-                    Projection=Projection(
-                        NonKeyAttributes=localSecondaryIndex["Projection"]["NonKeyAttributes"],
-                        ProjectionType=localSecondaryIndex["Projection"]["ProjectionType"]
-                    )
-                ) for localSecondaryIndex in table] if "LocalSecondaryIndexes" in table else None,
+                    Projection=getProjection(localSecondaryIndex["Projection"]),
+                ) for localSecondaryIndex in table["LocalSecondaryIndexes"]] if "LocalSecondaryIndexes" in table else None,
                 "ProvisionedThroughput": ProvisionedThroughput(
                     ReadCapacityUnits=int(table["ProvisionedThroughput"][
                                               "ReadCapacityUnits"] if "ProvisionedThroughput" in table and "ReadCapacityUnits" in
@@ -80,7 +91,8 @@ def dynamodb(item, template, defaults):
                 tableId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-            template.add_resource(tableResource)
+            tableObj = AWSObject(tableId, tableResource, table["TableName"])
+            G.add_node(tableObj)
 
             if "Triggers" in table:
                 for trigger in table["Triggers"]:
@@ -94,11 +106,17 @@ def dynamodb(item, template, defaults):
                                                                                                    "StartingPosition"),
                         "DependsOn": [tableId]
                     }
+                    eventSourceMappingId = regex.sub("", trigger[
+                            "FunctionName"] if "FunctionName" in trigger else trigger) + tableId + "EventSourceMapping"
                     eventSourceMapping = EventSourceMapping(
-                        regex.sub("", trigger[
-                            "FunctionName"] if "FunctionName" in trigger else trigger) + tableId + "EventSourceMapping",
+                        eventSourceMappingId,
                         **dict((k, v) for k, v in parameters.iteritems() if v is not None)
                     )
-                    template.add_resource(eventSourceMapping)
+                    eventSourceMappingObj = AWSObject(eventSourceMappingId, eventSourceMapping, "EventSourceMapping")
+                    G.add_node(eventSourceMappingObj)
 
-    return template
+                    funcId = regex.sub("", trigger["FunctionName"] + 'lambda' if "FunctionName" in trigger else trigger + 'lambda')
+                    functionObj = AWSObject(funcId)
+
+                    G.add_edge(eventSourceMappingObj, tableObj)
+                    G.add_edge(eventSourceMappingObj, functionObj)

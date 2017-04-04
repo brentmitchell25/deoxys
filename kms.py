@@ -2,9 +2,10 @@ from troposphere.kms import Alias, Key
 from troposphere import Ref, Join
 from awacs.aws import Action, Allow, Policy, Statement, Condition, AWSPrincipal, Bool
 import awacs.kms as KMS
+from AWSObject import AWSObject
 import re
 
-regex = re.compile('[^a-zA-Z]')
+regex = re.compile('[^a-zA-Z0-9]')
 
 
 def defaultKeyPolicy(admins, users):
@@ -78,23 +79,28 @@ def defaultKeyPolicy(admins, users):
     )
 
 
-def kms(item, template, defaults):
+def kms(item, G, defaults):
     if 'Keys' in item:
         for key in item['Keys']:
-            kmsKey = template.add_resource(Key(
-                regex.sub("", key["Alias"]) + "Key",
+            kmsKeyId = regex.sub("", key["Alias"]) + "Key"
+            kmsKey = Key(
+                kmsKeyId,
                 Description=key['Description'] if 'Description' in key else Ref('AWS::NoValue'),
                 Enabled=key['Enabled'] if 'Enabled' in key else defaults.getboolean('DEFAULT', 'KmsEnabled'),
                 EnableKeyRotation=key['EnableKeyRotation'] if 'EnableKeyRotation' in key else defaults.getboolean('DEFAULT',
                     'KmsEnableKeyRotation'),
                 KeyPolicy=defaultKeyPolicy(key['KeyAdmins'], key['KeyUsers']),
-                # DeletionPolicy=key['DeletionPolicy'] e
-            ))
-            alias = template.add_resource(Alias(
-                regex.sub("", key["Alias"])  + "Alias",
+            )
+
+            aliasId = regex.sub("", key["Alias"])  + "Alias"
+            alias = Alias(
+                aliasId,
                 AliasName=key["Alias"] if str(key["Alias"]).startswith("alias/")  else "alias/" + key["Alias"],
                 TargetKeyId=Ref(kmsKey),
-                # DeletionPolicy="Retain"
-            ))
+            )
 
-    return template
+            kmsKeyObj = AWSObject(kmsKeyId, kmsKey, "KMS-Key")
+            aliasObj = AWSObject(aliasId, alias, key["Alias"])
+            G.add_node(kmsKeyObj)
+            G.add_node(aliasObj)
+            G.add_edge(aliasObj, kmsKeyObj)

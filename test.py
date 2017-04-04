@@ -12,11 +12,12 @@ from boto3.dynamodb.conditions import Key
 from cStringIO import StringIO
 import ConfigParser
 import boto3
-import yaml
-import json
-import sys
+import re
+import networkx as nx
+import matplotlib.pyplot as plt
 import os
 import zipfile
+regex = re.compile('[^a-zA-Z0-9]')
 
 # Environment Variables
 
@@ -30,32 +31,66 @@ dynamodbClient = boto3.resource('dynamodb')
 s3Client = boto3.client('s3')
 
 t = Template()
-
 t.add_version("2010-09-09")
-applicationName = "UTIL"
+
+applicationName = "ASH-INVTXN-dev"
 protocols = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
 resources = {}
+
+def dependsOn(node, graph):
+    retVal = []
+    for u, v in graph.edges_iter():
+        if node == u:
+            retVal.append(regex.sub("", v.id))
+    return retVal
+
+def writeTemplate(template, graph):
+    for node in graph.nodes_iter():
+        depends = dependsOn(node, graph)
+        if depends != []:
+            node.troposphereResource.__setattr__('DependsOn', dependsOn(node, graph=graph))
+        template.add_resource(node.troposphereResource)
+
+G = nx.DiGraph()
+
 for item in protocols['Items']:
-    if item['Protocol'] == "lambda":
-        t = awslambda(item, t, defaults=config)
-    if item['Protocol'] == "sqs":
-        t = sqs(item, t, defaults=config)
-    if item['Protocol'] == "sns":
-        t = sns(item, t, defaults=config)
-    if item['Protocol'] == 's3':
-        t = s3(item, t, defaults=config)
-    if item['Protocol'] == "kms":
-        t = kms(item, t, defaults=config)
-    if item['Protocol'] == "dynamodb":
-        t = dynamodb(item, t, defaults=config)
-    if item['Protocol'] == "apigateway":
-        t = apigateway(item, t, defaults=config)
-    if item['Protocol'] == "iam":
+    if 'Protocol' in item:
+        item['Service'] = item['Protocol']
+    else:
+        item['Protocol'] = item['Service']
+    if item['Service'] == "lambda":
+        awslambda(item, t, defaults=config, G=G)
+    if item['Service'] == "sqs":
+        sqs(item, G, defaults=config)
+    if item['Service'] == "sns":
+        sns(item, G, defaults=config)
+    if item['Service'] == "s3":
+        s3(item, G, defaults=config)
+    if item['Service'] == "kms":
+        kms(item, G, defaults=config)
+    if item['Service'] == "dynamodb":
+        dynamodb(item, G, defaults=config)
+    # if item['Protocol'] == "apigateway" or item['Service'] == "apigateway":
+    #     t = apigateway(item, t, defaults=config)
+    if item['Service'] == "iam":
         iamTemplate = Template()
         iamTemplate.add_version("2010-09-09")
-        iamTemplate = iam(item, iamTemplate, defaults=config)
-        print(to_yaml(iamTemplate.to_json(), clean_up=True))
+        Giam = nx.DiGraph()
+        iam(item, Giam, defaults=config)
+        writeTemplate(iamTemplate, Giam)
+        # print(to_yaml(iamTemplate.to_json(), clean_up=True))
 
+# pos=nx.nx_pydot.graphviz_layout(G,prog='fdp')
+# nx.draw(G,pos, with_labels=True, font_size=8)
+
+
+# nx.draw(G,pos=nx.spring_layout(G, scale=100), with_labels=True, font_size=8)
+
+# for node in G.nodes():
+    # print node
+
+plt.show()
+writeTemplate(t, G)
 print(to_yaml(t.to_json(), clean_up=True))
