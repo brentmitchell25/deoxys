@@ -1,7 +1,10 @@
 from troposphere.sqs import Queue, RedrivePolicy
 from troposphere import Ref, Join
-from AWSObject import AWSObject
 import re
+import utilities
+import matplotlib.image as mpimg
+
+sqsImg = './AWS_Simple_Icons/Messaging/Messaging_AmazonSQS_queue.png'
 
 regex = re.compile('[^a-zA-Z0-9]')
 
@@ -38,14 +41,9 @@ def sqs(item, G, defaults):
                 queueId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-            queueObj = AWSObject(queueId, resource, queue['QueueName'])
-            if G.has_node(queueObj):
-                for node in G.nodes():
-                    if str(node) == queueId:
-                        node.troposphereResource = resource
-                        break
-            else:
-                G.add_node(queueObj)
+            utilities.mergeNode(G, id=queueId, resource=resource, image=sqsImg,
+                                name=queue['QueueName'])
+
             if 'DeadLetterQueue' in queue:
-                dlqObj = AWSObject(regex.sub('', queue['DeadLetterQueue']['Name']) + item['Protocol'])
-                G.add_edge(queueObj,  dlqObj)
+                dlqId = regex.sub('', queue['DeadLetterQueue']['Name']) + item['Protocol']
+                G.add_edge(queueId,  dlqId)

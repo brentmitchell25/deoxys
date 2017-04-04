@@ -2,7 +2,6 @@ from troposphere.kms import Alias, Key
 from troposphere import Ref, Join
 from awacs.aws import Action, Allow, Policy, Statement, Condition, AWSPrincipal, Bool
 import awacs.kms as KMS
-from AWSObject import AWSObject
 import re
 
 regex = re.compile('[^a-zA-Z0-9]')

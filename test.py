@@ -43,15 +43,15 @@ def dependsOn(node, graph):
     retVal = []
     for u, v in graph.edges_iter():
         if node == u:
-            retVal.append(regex.sub("", v.id))
+            retVal.append(regex.sub("", v))
     return retVal
 
 def writeTemplate(template, graph):
-    for node in graph.nodes_iter():
+    for node in graph:
         depends = dependsOn(node, graph)
         if depends != []:
-            node.troposphereResource.__setattr__('DependsOn', dependsOn(node, graph=graph))
-        template.add_resource(node.troposphereResource)
+            graph.node[node]['resource'].__setattr__('DependsOn', dependsOn(node, graph=graph))
+        template.add_resource(graph.node[node]['resource'])
 
 G = nx.DiGraph()
 
@@ -81,16 +81,57 @@ for item in protocols['Items']:
         iam(item, Giam, defaults=config)
         writeTemplate(iamTemplate, Giam)
         # print(to_yaml(iamTemplate.to_json(), clean_up=True))
-
+d = []
+for node in G:
+    # G.node
+    d.append(str(node))
 # pos=nx.nx_pydot.graphviz_layout(G,prog='fdp')
 # nx.draw(G,pos, with_labels=True, font_size=8)
+    # G = nx.complete_graph(4)
+    #
+    # G.node[0]['image'] = img
+    # G.node[1]['image'] = img
+    # G.node[2]['image'] = img
+    # G.node[3]['image'] = img
 
 
-# nx.draw(G,pos=nx.spring_layout(G, scale=100), with_labels=True, font_size=8)
+# pos=nx.spring_layout(G)
+# nx.draw(G,pos)
+
+# add images on edges
+# ax=plt.gca()
+# fig=plt.gcf()
+# label_pos = 0.5 # middle of edge, halfway between nodes
+# trans = ax.transData.transform
+# trans2 = fig.transFigure.inverted().transform
+# imsize = 0.1 # this is the image size
+# for (n1,n2) in G.edges():
+#     (x1,y1) = pos[n1]
+#     (x2,y2) = pos[n2]
+#     (x,y) = (x1 * label_pos + x2 * (1.0 - label_pos),
+#              y1 * label_pos + y2 * (1.0 - label_pos))
+#     xx,yy = trans((x,y)) # figure coordinates
+#     xa,ya = trans2((xx,yy)) # axes coordinates
+#     imsize = 0.05
+#     img =  G[n1][n2]['image']
+#     a = plt.axes([xa-imsize/2.0,ya-imsize/2.0, imsize, imsize ])
+#     a.imshow(img)
+#     a.set_aspect('equal')
+#     a.axis('off')
+
+# nx.draw(G,pos=nx.spring_layout(G,), with_labels=True, font_size=8)
 
 # for node in G.nodes():
     # print node
 
+# plt.show()
+print('HERE')
+nx.nx_pydot.write_dot(G, 'test.dot')
+# pos = nx.nx_pydot.graphviz_layout(G)
+pos=nx.nx_pydot.graphviz_layout(G,prog='dot')
+print('HERE')
+nx.draw(G,pos,  font_size=8,  with_labels=True)
 plt.show()
 writeTemplate(t, G)
+
 print(to_yaml(t.to_json(), clean_up=True))

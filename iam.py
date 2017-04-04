@@ -1,8 +1,10 @@
 from troposphere.iam import Role, User, ManagedPolicy, Policy as Pol
 from awacs.aws import Action, Allow, Policy, Statement, Condition, AWSPrincipal, Bool, Principal
 from troposphere import Ref, Join
-from AWSObject import AWSObject
 import re
+import utilities
+import matplotlib.image as mpimg
+roleImg = './AWS_Simple_Icons/Security Identity & Compliance/SecurityIdentityCompliance_IAM_role.png'
 
 regex = re.compile('[^a-zA-Z0-9]')
 
@@ -19,7 +21,7 @@ def principalArn(principal, G, roleId):
         roles = []
         for role in principal["Name"]:
             roles.append(Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":role/", role]))
-            G.add_edge(AWSObject(roleId), AWSObject(regex.sub("", role) + "Role"))
+            G.add_edge(roleId, regex.sub("", role) + "Role")
         return AWSPrincipal(roles)
     elif principal["Owner"] == "Service":
         return Principal("Service", [str(principal["Name"])])
@@ -93,13 +95,5 @@ def iam(item, G, defaults):
                 roleId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-
-            roleObj = AWSObject(roleId, roleResource, role["RoleName"])
-
-            if G.has_node(roleObj):
-                for node in G.nodes():
-                    if str(node) == roleId:
-                        node.troposphereResource = roleResource
-                        break
-            else:
-                G.add_node(roleObj)
+            utilities.mergeNode(G, id=roleId, resource=roleResource, image=roleImg,
+                                name=role["RoleName"])

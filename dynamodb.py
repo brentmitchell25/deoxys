@@ -4,11 +4,14 @@ from troposphere import Ref, Join, GetAtt
 from troposphere.awslambda import EventSourceMapping
 from awacs.aws import Principal
 import awacs.awslambda as awslambda
-from AWSObject import AWSObject
 import re
+import utilities
+import matplotlib.image as mpimg
+
+lambdaImg = './AWS_Simple_Icons/Compute/Compute_AWSLambda.png'
+dynamodbImg = './AWS_Simple_Icons/Database/Database_AmazonDynamoDB_table.png'
 
 regex = re.compile('[^a-zA-Z0-9]')
-
 
 def keySchema(keySchemas, defaults):
     return [KeySchema(AttributeName=keySchema["AttributeName"],
@@ -91,8 +94,8 @@ def dynamodb(item, G, defaults):
                 tableId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-            tableObj = AWSObject(tableId, tableResource, table["TableName"])
-            G.add_node(tableObj)
+            utilities.mergeNode(G, id=tableId, resource=tableResource, image=dynamodbImg,
+                                name=table["TableName"])
 
             if "Triggers" in table:
                 for trigger in table["Triggers"]:
@@ -112,11 +115,10 @@ def dynamodb(item, G, defaults):
                         eventSourceMappingId,
                         **dict((k, v) for k, v in parameters.iteritems() if v is not None)
                     )
-                    eventSourceMappingObj = AWSObject(eventSourceMappingId, eventSourceMapping, "EventSourceMapping")
-                    G.add_node(eventSourceMappingObj)
+                    utilities.mergeNode(G, id=eventSourceMappingId, resource=eventSourceMapping, image=lambdaImg,
+                                        name="EventSourceMapping")
 
                     funcId = regex.sub("", trigger["FunctionName"] + 'lambda' if "FunctionName" in trigger else trigger + 'lambda')
-                    functionObj = AWSObject(funcId)
 
-                    G.add_edge(eventSourceMappingObj, tableObj)
-                    G.add_edge(eventSourceMappingObj, functionObj)
+                    G.add_edge(eventSourceMappingId, tableId)
+                    G.add_edge(eventSourceMappingId, funcId)
