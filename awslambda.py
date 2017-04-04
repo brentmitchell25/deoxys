@@ -3,6 +3,8 @@ from troposphere.apigateway import RestApi, Resource, Method, Integration, Deplo
     MethodResponse
 from AWSObject import AWSObject
 from troposphere.events import Rule, Target
+from troposphere.apigateway import RestApi, Resource, Method, Integration, Deployment, IntegrationResponse, \
+    MethodResponse
 from troposphere import FindInMap, GetAtt, Join, Output
 from troposphere import Parameter, Ref, Template
 from distutils.util import strtobool
