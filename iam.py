@@ -34,17 +34,20 @@ def principalArn(principal, G, roleId):
 
 
 def resourceArn(resource):
+    region = Ref("AWS::Region") if "Region" not in resource else resource["Region"]
+    accountId = Ref("AWS::AccountId") if "AccountId" not in resource else resource["AccountId"]
     if resource['Service'] == "All":
         return "*"
     elif resource['Service'] == "s3":
-        return "arn:aws:s3:::" +  resource["Resource"]
+        return "arn:aws:s3:::" + resource["Resource"]
     elif resource['Service'] == "execute-api":
         return "arn:aws:execute-api:" + resource["Resource"]
     elif resource['Service'] == "iam":
-        return Join("", ["arn:aws:", resource["Service"], "::", Ref("AWS::AccountId"), ":",
+        return Join("", ["arn:aws:", resource["Service"], "::", accountId, ":",
                          resource["Resource"]])
     else:
-        return Join("", ["arn:aws:", resource["Service"], ":", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":", resource["Resource"]])
+        return Join("", ["arn:aws:", resource["Service"], ":", region, ":", accountId, ":",
+                         resource["Resource"]])
 
 
 def getActions(statement):
