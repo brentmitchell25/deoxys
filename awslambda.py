@@ -208,7 +208,7 @@ def awslambda(item, template, defaults, G):
                     Name=function['FunctionName'] + 'Poller',
                     Description=function['FunctionName'] + " Poller",
                     ScheduleExpression="rate(" + str(function['Poller']['Rate']) + ")",
-                    State="ENABLED" if 'Enabled' in function['Poller'] and str(function['Poller']['Enabled']).lower() == 'true' else 'DISABLED',
+                    State="DISABLED" if 'Enabled' in function['Poller'] and str(function['Poller']['Enabled']).lower() == 'false' else 'ENABLED',
                     Targets=[Target(
                         Arn=GetAtt(func, "Arn"),
                         Id=functionId
