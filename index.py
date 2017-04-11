@@ -36,16 +36,15 @@ def dependsOn(node, graph):
     retVal = []
     for u, v in graph.edges_iter():
         if node == u:
-            retVal.append(regex.sub("", v.id))
+            retVal.append(regex.sub("", v))
     return retVal
 
-
 def writeTemplate(template, graph):
-    for node in graph.nodes_iter():
-        depends = dependsOn(node, graph=graph)
+    for node in graph:
+        depends = dependsOn(node, graph)
         if depends != []:
-            node.troposphereResource.__setattr__('DependsOn', dependsOn(node, graph))
-        template.add_resource(node.troposphereResource)
+            graph.node[node]['resource'].__setattr__('DependsOn', dependsOn(node, graph=graph))
+        template.add_resource(graph.node[node]['resource'])
 
 
 def handler(event, context):
