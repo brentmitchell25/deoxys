@@ -15,6 +15,7 @@ from cfn_flip import to_yaml
 import json
 import networkx as nx
 import os
+import uuid
 import zipfile
 import traceback
 import re
@@ -96,12 +97,15 @@ def handler(event, context):
                 Body=template.read()
             )
             template.close()
-            nx.nx_pydot.write_dot(G, applicationName + "/" + applicationName + '.dot')
-            s3Client.put_object(
-                Bucket=config.get('DEFAULT', 'CloudformationBucket'),
-                Key=applicationName + "/" + applicationName + ".dot",
-                Body=template.read()
-            )
+            tmpName = str(uuid.uuid4())
+            nx.nx_pydot.write_dot(G, "{}{}/{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName))
+
+            with open("{}{}/{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName), "rb") as dotFile:
+                s3Client.put_object(
+                    Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                    Key='{}/{}.dot'.format(applicationName, applicationName),
+                    Body=dotFile.read()
+                )
 
             template = StringIO(to_yaml(t.to_json(), clean_up=True))
             myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", 'w')
