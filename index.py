@@ -97,6 +97,12 @@ def handler(event, context):
                 Body=template.read()
             )
             template.close()
+            nx.nx_pydot.write_dot(G, applicationName + "/" + applicationName + '.dot')
+            s3Client.put_object(
+                Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                Key=applicationName + "/" + applicationName + ".dot",
+                Body=template.read()
+            )
 
             template = StringIO(to_yaml(t.to_json(), clean_up=True))
             myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", 'w')
