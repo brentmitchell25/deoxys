@@ -6,9 +6,14 @@ from troposphere.sns import Topic, TopicPolicy, SubscriptionResource, Subscripti
 from awacs.aws import Policy, Statement, Principal, Action, Condition, ConditionElement
 from awacs.aws import Allow, ArnEquals, AWSPrincipal, Condition
 import re
+import utilities
 import awacs.sqs as sqs
-from AWSObject import AWSObject
 import awacs.awslambda as awslambda
+import matplotlib.image as mpimg
+
+lambdaImg = './AWS_Simple_Icons/Compute/Compute_AWSLambda.png'
+snsImg = './AWS_Simple_Icons/Messaging/Messaging_AmazonSNS_topic.png'
+sqsImg = './AWS_Simple_Icons/Messaging/Messaging_AmazonSQS_queue.png'
 
 regex = re.compile('[^a-zA-Z0-9]')
 
@@ -54,8 +59,8 @@ def sns(item, G, defaults):
                                            ":",
                                            topic['TopicName']])
                         )
-                        subscriptionResourceObj = AWSObject(subscriptionResourceId, subscriptionResource, subscription["Endpoint"] + "-Subscription")
-                        G.add_node(subscriptionResourceObj)
+                        utilities.mergeNode(G, id=subscriptionResourceId, resource=subscriptionResource, image=snsImg,
+                                            name=subscription["Endpoint"] + "-Subscription")
 
                     if subscription["Protocol"] == "lambda":
                         permissionId = endpointId + regex.sub('', topic['TopicName']) + 'InvokePermission'
@@ -69,11 +74,12 @@ def sns(item, G, defaults):
                                             topic['TopicName']]),
                             FunctionName=subscription["Endpoint"]
                         )
-                        permissionObj = AWSObject(permissionId, permission, "InvokeFunctionPermission")
-                        G.add_node(permissionObj)
-                        G.add_edge(permissionObj, AWSObject(regex.sub("",subscription["Endpoint"] + subscription["Protocol"])))
+                        utilities.mergeNode(G, id=permissionId, resource=permission, image=lambdaImg,
+                                            name="InvokeFunctionPermission")
+
+                        G.add_edge(permissionId, regex.sub("", subscription["Endpoint"] + subscription["Protocol"]))
                         if str(topic['CreateTopic']) == 'true':
-                            G.add_edge(permissionObj, AWSObject(topicId))
+                            G.add_edge(permissionId, topicId)
                     elif subscription["Protocol"] == "sqs":
                         queuePolicyId = regex.sub('', topic['TopicName']) + 'QueuePolicy'
                         queuePolicy = QueuePolicy(
@@ -98,12 +104,11 @@ def sns(item, G, defaults):
                                           Ref("AWS::AccountId"), "/",
                                           subscription["Endpoint"]])]
                         )
-
-                        queuePolObj = AWSObject(queuePolicyId, queuePolicy, "QueuePolicy")
-                        G.add_node(queuePolObj)
-                        G.add_edge(queuePolObj, AWSObject(regex.sub("",subscription["Endpoint"] + subscription["Protocol"])))
+                        utilities.mergeNode(G, id=queuePolicyId, resource=queuePolicy, image=sqsImg,
+                                            name="QueuePolicy")
+                        G.add_edge(queuePolicyId, regex.sub("", subscription["Endpoint"] + subscription["Protocol"]))
                         if str(topic['CreateTopic']) == 'true':
-                            G.add_edge(queuePolicy, AWSObject(topicId))
+                            G.add_edge(queuePolicyId, topicId)
 
             if topic['CreateTopic'] == True:
                 resource = Topic(
@@ -111,11 +116,5 @@ def sns(item, G, defaults):
                     TopicName=topic['TopicName'],
                     Subscription=subscriptions,
                 )
-                topicObj = AWSObject(topicId, resource, topicId)
-                if G.has_node(topicObj):
-                    for node in G.nodes():
-                        if str(node) == topicId:
-                            node.troposphereResource = resource
-                            break
-                else:
-                    G.add_node(topicObj)
+                utilities.mergeNode(G, id=topicId, resource=resource, image=snsImg,
+                                    name=topicId)

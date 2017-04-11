@@ -1,7 +1,6 @@
 from troposphere.awslambda import Function, Code, Permission, VPCConfig, Environment
 from troposphere.apigateway import RestApi, Resource, Method, Integration, Deployment, IntegrationResponse, \
     MethodResponse
-from AWSObject import AWSObject
 from troposphere.events import Rule, Target
 from troposphere.apigateway import RestApi, Resource, Method, Integration, Deployment, IntegrationResponse, \
     MethodResponse
@@ -10,8 +9,13 @@ from troposphere import Parameter, Ref, Template
 from distutils.util import strtobool
 import uuid
 import re
+import utilities
 import json
+import matplotlib.image as mpimg
 
+lambdaImg = './AWS_Simple_Icons/Compute/Compute_AWSLambda.png'
+apiGatewayImg = './AWS_Simple_Icons/Application Services/ApplicationServices_AmazonAPIGateway.png'
+cloudwatchImg = './AWS_Simple_Icons/Management Tools/ManagementTools_AmazonCloudWatch_eventtimebased.png'
 regex = re.compile('[^a-zA-Z0-9]')
 
 
@@ -123,8 +127,6 @@ def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
     )
 
 
-
-
 def getCode(function, defaults):
     if 'Code' in function and 'S3Bucket' in function['Code'] and 'S3Key' in function['Code']:
         code = Code(
@@ -190,15 +192,8 @@ def awslambda(item, template, defaults, G):
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
 
-            funcObj = AWSObject(functionId + item['Protocol'], func)
-
-            if G.has_node(AWSObject(functionId + item['Protocol'])):
-                for node in G.nodes():
-                    if str(node) == functionId + item['Protocol']:
-                        node.troposphereResource = func
-                        break
-            else:
-                G.add_node(funcObj)
+            graphFunctionId = functionId + item['Protocol']
+            utilities.mergeNode(G, id=graphFunctionId, resource=func, image=lambdaImg, name=parameters['FunctionName'])
 
             if 'Poller' in function:
                 pollerId = functionId + 'Poller'
@@ -221,13 +216,13 @@ def awslambda(item, template, defaults, G):
                     SourceArn=GetAtt(poller, "Arn"),
                     FunctionName=Ref(func)
                 )
-                poll = AWSObject(pollerId, poller)
-                perm = AWSObject(permissionId, permission)
-                G.add_node(poll)
-                G.add_node(perm)
-                G.add_edge(poll, funcObj)
-                G.add_edge(perm, funcObj)
-                G.add_edge(perm, poll)
+                utilities.mergeNode(G, id=pollerId, resource=poller, image=lambdaImg,
+                                    name=pollerId)
+                utilities.mergeNode(G, id=permissionId, resource=permission, image=lambdaImg,
+                                    name=pollerId + ' InvokePermission')
+                G.add_edge(pollerId, graphFunctionId)
+                G.add_edge(permissionId, graphFunctionId)
+                G.add_edge(permissionId, pollerId)
             if 'Api' in function:
                 if str(function['Api']['Path']).startswith('/'):
                     function['Api']['Path'] = str(function['Api']['Path'])[1:]
@@ -255,14 +250,16 @@ def awslambda(item, template, defaults, G):
                     'Cors': function['Api']['Cors'] if 'Cors' in function['Api'] else None,
                 }
 
-                restApiObj = None
+                restApiId = None
                 if 'Name' in parameters['RestApi']:
                     restApiId = regex.sub("", function['Api']['RestApi']["Name"]) + 'api'
                     restApi = RestApi(
                         restApiId,
                         Name=function['Api']['RestApi']["Name"],
                     )
-                    restApiObj = AWSObject(restApiId, restApi, function['Api']['RestApi']["Name"])
+                    utilities.mergeNode(G, id=restApiId, resource=restApi, image=apiGatewayImg,
+                                        name=function['Api']['RestApi']["Name"])
+
                     apiId = Ref(restApi)
                     resourceId = GetAtt(restApi, "RootResourceId")
                 else:
@@ -285,17 +282,16 @@ def awslambda(item, template, defaults, G):
                             apiResourceId,
                             **dict((k, v) for k, v in apiParameters.iteritems() if v is not None)
                         )
-                        apiResourceObj = AWSObject(apiResourceId, apiResource, regex.sub("", path))
-                        G.add_node(apiResourceObj)
-
+                        utilities.mergeNode(G, id=apiResourceId, resource=apiResource, image=apiGatewayImg,
+                                            name=regex.sub("", path))
                         if i == 0:
-                            if restApiObj is not None:
-                                G.add_edge(apiResourceObj, restApiObj)
+                            if 'Name' in parameters['RestApi']:
+                                G.add_edge(apiResourceId, restApiId)
                         else:
                             prevPath = str(parameters['Path']).split('/')[i - 1]
-                            G.add_edge(apiResourceObj, AWSObject(regex.sub("", prevPath) + 'Path'))
+                            G.add_edge(apiResourceId, regex.sub("", prevPath) + 'Path')
 
-                corsMethodObj = None
+                corsMethodId = None
                 if str(parameters['Cors']).lower() == 'true':
                     corsMethodParameters = {
                         "RestApiId": apiId,
@@ -319,7 +315,9 @@ def awslambda(item, template, defaults, G):
                         corsMethodId,
                         **dict((k, v) for k, v in corsMethodParameters.iteritems() if v is not None)
                     )
-                    corsMethodObj = AWSObject(corsMethodId, corsMethod, pathToMethod + 'CorsMethod')
+
+                    utilities.mergeNode(G, id=corsMethodId, resource=corsMethod, image=apiGatewayImg,
+                                        name=pathToMethod + 'CorsMethod')
 
                 if str(parameters['Asynchronous']).lower() == 'true':
                     methodParameters = {
@@ -359,8 +357,8 @@ def awslambda(item, template, defaults, G):
                     methodId,
                     **dict((k, v) for k, v in methodParameters.iteritems() if v is not None)
                 )
-                methodObj = AWSObject(methodId, method,
-                                      apiResourceObj.label + '-' + str(parameters['HttpMethod']).upper())
+                utilities.mergeNode(G, id=methodId, resource=method, image=apiGatewayImg,
+                                    name='Te' + '-' + str(parameters['HttpMethod']).upper())
 
                 deploymentId = regex.sub("", str(apiId) + str(uuid.uuid4())) + 'Deployment'
                 deploymentParameters = {
@@ -372,7 +370,8 @@ def awslambda(item, template, defaults, G):
                     deploymentId,
                     **dict((k, v) for k, v in deploymentParameters.iteritems() if v is not None)
                 )
-                deploymentObj = AWSObject(deploymentId, deployment, parameters['StageName'] + "-Deployment")
+                utilities.mergeNode(G, id=deploymentId, resource=deployment, image=apiGatewayImg,
+                                    name=parameters['StageName'] + "-Deployment")
 
                 permissionId = regex.sub("", parameters['Path']) + parameters['HttpMethod'] + 'Path' + 'Permission'
                 permission = Permission(
@@ -384,21 +383,16 @@ def awslambda(item, template, defaults, G):
                                         str(parameters['Path'])]),
                     FunctionName=Ref(func),
                 )
-                permissionObj = AWSObject(permissionId, permission, "InvokeFunctionPermission")
+                utilities.mergeNode(G, id=permissionId, resource=permission, image=lambdaImg,
+                                    name="InvokeFunctionPermission")
 
-                G.add_node(methodObj)
-                G.add_node(permissionObj)
-                G.add_node(deploymentObj)
-                if corsMethodObj is not None:
-                    G.add_node(corsMethodObj)
+                G.add_edge(methodId, apiResourceId)
+                G.add_edge(deploymentId, methodId)
+                G.add_edge(permissionId, methodId)
+                G.add_edge(permissionId, graphFunctionId)
 
-                G.add_edge(methodObj, apiResourceObj)
-                G.add_edge(deploymentObj, methodObj)
-                G.add_edge(permissionObj, methodObj)
-                G.add_edge(permissionObj, funcObj)
-
-                if corsMethodObj is not None:
-                    G.add_edge(corsMethodObj, apiResourceObj)
-                    G.add_edge(deploymentObj, corsMethodObj)
-                if restApiObj is not None:
-                    G.add_edge(permissionObj, restApiObj)
+                if corsMethodId is not None:
+                    G.add_edge(corsMethodId, apiResourceId)
+                    G.add_edge(deploymentId, corsMethodId)
+                if restApiId is not None:
+                    G.add_edge(permissionId, restApiId)

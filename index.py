@@ -15,6 +15,7 @@ from cfn_flip import to_yaml
 import json
 import networkx as nx
 import os
+import uuid
 import zipfile
 import traceback
 import re
@@ -36,16 +37,15 @@ def dependsOn(node, graph):
     retVal = []
     for u, v in graph.edges_iter():
         if node == u:
-            retVal.append(regex.sub("", v.id))
+            retVal.append(regex.sub("", v))
     return retVal
 
-
 def writeTemplate(template, graph):
-    for node in graph.nodes_iter():
-        depends = dependsOn(node, graph=graph)
+    for node in graph:
+        depends = dependsOn(node, graph)
         if depends != []:
-            node.troposphereResource.__setattr__('DependsOn', dependsOn(node, graph))
-        template.add_resource(node.troposphereResource)
+            graph.node[node]['resource'].__setattr__('DependsOn', dependsOn(node, graph=graph))
+        template.add_resource(graph.node[node]['resource'])
 
 
 def handler(event, context):
@@ -97,6 +97,15 @@ def handler(event, context):
                 Body=template.read()
             )
             template.close()
+            tmpName = str(uuid.uuid4())
+            nx.nx_pydot.write_dot(G, "{}{}-{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName))
+
+            with open("{}{}-{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName), "rb") as dotFile:
+                s3Client.put_object(
+                    Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                    Key='{}/{}.dot'.format(applicationName, applicationName),
+                    Body=dotFile.read()
+                )
 
             template = StringIO(to_yaml(t.to_json(), clean_up=True))
             myzip = zipfile.ZipFile(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", 'w')

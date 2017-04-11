@@ -1,6 +1,11 @@
 from troposphere.s3 import Bucket, Tags
+import utilities
 import re
-from AWSObject import AWSObject
+
+import matplotlib.image as mpimg
+
+s3Img = './AWS_Simple_Icons/Storage/Storage_AmazonS3_bucket.png'
+
 regex = re.compile('[^a-zA-Z0-9]')
 
 
@@ -17,6 +22,5 @@ def s3(item, G, defaults):
                 bucketId,
                 **dict((k, v) for k, v in parameters.iteritems() if v is not None)
             )
-
-            bucketObj = AWSObject(bucketId, bucketRes, bucket['BucketName'])
-            G.add_node(bucketObj)
+            utilities.mergeNode(G, id=bucketId, resource=bucketRes, image=s3Img,
+                                name=bucket['BucketName'])
