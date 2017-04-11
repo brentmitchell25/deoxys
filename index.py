@@ -98,9 +98,9 @@ def handler(event, context):
             )
             template.close()
             tmpName = str(uuid.uuid4())
-            nx.nx_pydot.write_dot(G, "{}{}/{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName))
+            nx.nx_pydot.write_dot(G, "{}{}-{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName))
 
-            with open("{}{}/{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName), "rb") as dotFile:
+            with open("{}{}-{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName), "rb") as dotFile:
                 s3Client.put_object(
                     Bucket=config.get('DEFAULT', 'CloudformationBucket'),
                     Key='{}/{}.dot'.format(applicationName, applicationName),
