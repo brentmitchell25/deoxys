@@ -52,10 +52,6 @@ def writeTemplate(template, graph):
         if depends != [] and 'resource' in graph.node[node]:
             graph.node[node]['resource'].__setattr__('DependsOn', dependsOn(node, graph=graph))
 
-        # TODO: Bug here
-        if 'resource' in graph.node[node]:
-            template.add_resource(graph.node[node]['resource'])
-
 G = nx.DiGraph()
 
 for item in protocols['Items']:
