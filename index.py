@@ -43,9 +43,12 @@ def dependsOn(node, graph):
 def writeTemplate(template, graph):
     for node in graph:
         depends = dependsOn(node, graph)
-        if depends != []:
+        if depends != [] and 'resource' in graph.node[node]:
             graph.node[node]['resource'].__setattr__('DependsOn', dependsOn(node, graph=graph))
-        template.add_resource(graph.node[node]['resource'])
+
+        # TODO: Bug here
+        if 'resource' in graph.node[node]:
+            template.add_resource(graph.node[node]['resource'])
 
 
 def handler(event, context):
