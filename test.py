@@ -33,7 +33,7 @@ s3Client = boto3.client('s3')
 t = Template()
 t.add_version("2010-09-09")
 
-applicationName = "MP-MTM-uat"
+applicationName = "ASH-uat"
 protocols = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
@@ -51,6 +51,7 @@ def writeTemplate(template, graph):
         depends = dependsOn(node, graph)
         if depends != [] and 'resource' in graph.node[node]:
             graph.node[node]['resource'].__setattr__('DependsOn', dependsOn(node, graph=graph))
+        template.add_resource(graph.node[node]['resource'])
 
 G = nx.DiGraph()
 
@@ -79,7 +80,7 @@ for item in protocols['Items']:
         Giam = nx.DiGraph()
         iam(item, Giam, defaults=config)
         writeTemplate(iamTemplate, Giam)
-        # print(to_yaml(iamTemplate.to_json(), clean_up=True))
+        print(to_yaml(iamTemplate.to_json(), clean_up=True))
 
 
 # plt.show()

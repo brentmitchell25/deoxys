@@ -25,6 +25,7 @@ def sqs(item, G, defaults):
                                                                                                           'MessageRetentionPeriod'),
                 "DelaySeconds": str(
                     queue['DelaySeconds']) if 'DelaySeconds' in queue else None,
+                "FifoQueue": queue['FifoQueue'] if 'FifoQueue' in queue else None,
                 "RedrivePolicy": RedrivePolicy(
                     deadLetterTargetArn=Join("",
                                              ["arn:aws:sqs", ":", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":",
