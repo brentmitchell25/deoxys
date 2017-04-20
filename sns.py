@@ -81,31 +81,36 @@ def sns(item, G, defaults):
                         if str(topic['CreateTopic']) == 'true':
                             G.add_edge(permissionId, topicId)
                     elif subscription["Protocol"] == "sqs":
-                        queuePolicyId = regex.sub('', topic['TopicName']) + 'QueuePolicy'
-                        queuePolicy = QueuePolicy(
-                            queuePolicyId,
-                            PolicyDocument=Policy(
-                                Id=endpointId + topicId + 'Policy',
-                                Version='2012-10-17',
-                                Statement=[Statement(
-                                    Effect="Allow",
-                                    Action=[sqs.SendMessage],
-                                    Principal=Principal("Service", ["sns.amazonaws.com"]),
-                                    Resource=[endpoint],
-                                    Condition=Condition(ArnEquals({
-                                        "aws:SourceArn": [Join("", ["arn:aws:sns:", Ref("AWS::Region"), ":",
-                                                                    Ref("AWS::AccountId"), ":",
-                                                                    topic['TopicName']])]
-                                    }))
-                                )],
-                            ),
-                            Queues=[
-                                Join("", ["https://sqs.", Ref("AWS::Region"), ".amazonaws.com/",
-                                          Ref("AWS::AccountId"), "/",
-                                          subscription["Endpoint"]])]
+                        queuePolicyId = endpointId + 'QueuePolicy'
+                        statement = Statement(
+                            Effect="Allow",
+                            Action=[sqs.SendMessage],
+                            Principal=Principal("Service", ["sns.amazonaws.com"]),
+                            Resource=[endpoint],
+                            Condition=Condition(ArnEquals({
+                                "aws:SourceArn": [Join("", ["arn:aws:sns:", Ref("AWS::Region"), ":",
+                                                            Ref("AWS::AccountId"), ":",
+                                                            topic['TopicName']])]
+                            }))
                         )
-                        utilities.mergeNode(G, id=queuePolicyId, resource=queuePolicy, image=sqsImg,
-                                            name="QueuePolicy")
+                        # Need to check if multiple topics are subscribed to the same queue
+                        if G.has_node(queuePolicyId):
+                            G.node[queuePolicyId]['resource'].__dict__['resource']['Properties']['PolicyDocument'].__dict__['resource']['Statement'].append(statement)
+                        else:
+                            queuePolicy = QueuePolicy(
+                                queuePolicyId,
+                                PolicyDocument=Policy(
+                                    Id=endpointId + topicId + 'Policy',
+                                    Version='2012-10-17',
+                                    Statement=[statement],
+                                ),
+                                Queues=[
+                                    Join("", ["https://sqs.", Ref("AWS::Region"), ".amazonaws.com/",
+                                              Ref("AWS::AccountId"), "/",
+                                              subscription["Endpoint"]])]
+                            )
+                            utilities.mergeNode(G, id=queuePolicyId, resource=queuePolicy, image=sqsImg,
+                                                name="QueuePolicy")
                         G.add_edge(queuePolicyId, regex.sub("", subscription["Endpoint"] + subscription["Protocol"]))
                         if str(topic['CreateTopic']) == 'true':
                             G.add_edge(queuePolicyId, topicId)
