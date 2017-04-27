@@ -26,6 +26,7 @@ def sqs(item, G, defaults):
                 "DelaySeconds": str(
                     queue['DelaySeconds']) if 'DelaySeconds' in queue else None,
                 "FifoQueue": queue['FifoQueue'] if 'FifoQueue' in queue else None,
+                "ContentBasedDeduplication": queue['ContentBasedDeduplication'] if 'ContentBasedDeduplication' in queue else None,
                 "RedrivePolicy": RedrivePolicy(
                     deadLetterTargetArn=Join("",
                                              ["arn:aws:sqs", ":", Ref("AWS::Region"), ":", Ref("AWS::AccountId"), ":",
