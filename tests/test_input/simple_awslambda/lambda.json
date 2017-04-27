@@ -3,7 +3,7 @@
   "Functions": [
     {
       "FunctionName": "AwesomeFunction",
-      "Role": "TestRoleNames"
+      "Role": "TestRoleName"
     }
   ],
   "Service": "lambda"
