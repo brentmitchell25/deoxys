@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  AwesomeFunctionlambda:
+    Properties:
+      Code:
+        ZipFile: 'exports.handler = (event, context, callback) => {
+
+          console.log(JSON.stringify(event));
+
+          callback(null, "some success message");
+
+          };'
+      FunctionName: AwesomeFunction
+      Handler: index.handler
+      MemorySize: 128
+      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/TestRoleName'
+      Runtime: nodejs6.10
+      Timeout: '10'
+    Type: AWS::Lambda::Function

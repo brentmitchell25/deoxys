@@ -1,0 +1,10 @@
+{
+  "ApplicationName": "Test",
+  "Functions": [
+    {
+      "FunctionName": "AwesomeFunction",
+      "Role": "TestRoleNames"
+    }
+  ],
+  "Service": "lambda"
+}
