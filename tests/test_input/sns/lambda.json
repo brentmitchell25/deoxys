@@ -2,7 +2,7 @@
   "ApplicationName": "Test",
   "Functions": [
     {
-      "FunctionName": "AwesomeFunction",
+      "FunctionName": "TestLambda",
       "Role": "TestRoleName"
     }
   ],

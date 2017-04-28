@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  TestLambdalambda:
+    Properties:
+      Code:
+        ZipFile: 'exports.handler = (event, context, callback) => {
+
+          console.log(JSON.stringify(event));
+
+          callback(null, "some success message");
+
+          };'
+      FunctionName: TestLambda
+      Handler: index.handler
+      MemorySize: 128
+      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/TestRoleName'
+      Runtime: nodejs6.10
+      Timeout: '10'
+    Type: AWS::Lambda::Function
+  TestLambdalambdaTestTopic3InvokePermission:
+    DependsOn: [TestLambdalambda]
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: TestLambda
+      Principal: sns.amazonaws.com
+      SourceArn: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:TestTopic3'
+    Type: AWS::Lambda::Permission
+  TestQsqs:
+    Properties:
+      MessageRetentionPeriod: '604800'
+      QueueName: TestQ
+      ReceiveMessageWaitTimeSeconds: '0'
+    Type: AWS::SQS::Queue
+  TestQsqsQueuePolicy:
+    DependsOn: [TestQsqs]
+    Properties:
+      PolicyDocument:
+        Id: TestQsqsTestTopic2snsPolicy
+        Statement:
+        - Action: ['sqs:SendMessage']
+          Condition:
+            ArnEquals:
+              aws:SourceArn: [!Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:TestTopic2']
+          Effect: Allow
+          Principal:
+            Service: [sns.amazonaws.com]
+          Resource: [!Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:TestQ']
+        Version: '2012-10-17'
+      Queues: [!Sub 'https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/TestQ']
+    Type: AWS::SQS::QueuePolicy
+  TestTopic1sns:
+    Properties:
+      Subscription: []
+      TopicName: TestTopic1
+    Type: AWS::SNS::Topic
+  TestTopic2sns:
+    Properties:
+      Subscription:
+      - Endpoint: !Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:TestQ'
+        Protocol: sqs
+      TopicName: TestTopic2
+    Type: AWS::SNS::Topic
+  TestTopic3TestLambdalambdasubscription:
+    Properties:
+      Endpoint: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:TestLambda'
+      Protocol: lambda
+      TopicArn: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:TestTopic3'
+    Type: AWS::SNS::Subscription

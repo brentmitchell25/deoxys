@@ -1,0 +1,22 @@
+{
+    "ApplicationName": "Test",
+    "Service": "sqs",
+    "Queues": [{
+            "QueueName": "TestQ"
+        },
+        {
+            "ContentBasedDeduplication": true,
+            "DelaySeconds": 0,
+            "FifoQueue": true,
+            "MaximumReceiveSize": 262144,
+            "MessageRetentionPeriod": 60,
+            "QueueName": "TestQ",
+            "ReceiveMessageWaitTimeSeconds": 0,
+            "DeadLetterQueue": {
+                "MaxReceiveCount": 15,
+                "Name": "TestQ"
+            },
+            "VisibilityTimeout": 100
+        }
+    ]
+}

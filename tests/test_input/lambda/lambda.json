@@ -1,0 +1,69 @@
+{
+  "ApplicationName": "Test",
+  "Functions": [{
+      "FunctionName": "AwesomeFunction",
+      "Role": "TestRoleName"
+    },
+    {
+      "FunctionName": "AwesomeFunction",
+      "Description": "All basic propteries for lambda",
+      "Code": {
+        "S3Bucket": "lambda-bucket",
+        "S3Key": "test.zip"
+      },
+      "Environment": {
+        "Variables": {
+          "VARIABLE_1": "Some environement variable",
+          "VARIABLE_2": "Another environment variable"
+        }
+      },
+      "Poller": {
+        "Rate": "5 minutes"
+      },
+      "Handler": "index.handler",
+      "MemorySize": 256,
+      "Role": "TestRoleName",
+      "Runtime": "python3.6",
+      "Timeout": 60,
+      "VpcConfig": true
+    },
+    {
+      "Api": {
+        "HttpMethod": "GET",
+        "Path": "test",
+        "RestApi": {
+          "Id": "abcdefg12",
+          "ResourceId": "12345678ab"
+        },
+        "StageName": "dev",
+        "UrlQueryStringParameters": [
+          "param1",
+          "param2",
+          "param3"
+        ]
+      },
+      "FunctionName": "AwesomeFunction",
+      "Description": "Attaches to existing RestApi",
+      "Role": "TestRoleName"
+    },
+    {
+      "Api": {
+        "HttpMethod": "GET",
+        "Path": "test",
+        "RestApi": {
+          "Name": "ApiName"
+        },
+        "StageName": "dev",
+        "UrlQueryStringParameters": [
+          "param1",
+          "param2",
+          "param3"
+        ]
+      },
+      "FunctionName": "AwesomeFunction",
+      "Description": "Creates a new RestApi",
+      "Role": "TestRoleName"
+    }
+  ],
+  "Service": "lambda"
+}

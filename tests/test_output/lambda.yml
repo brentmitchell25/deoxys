@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  ApiNameapi:
+    Properties:
+      Name: ApiName
+    Type: AWS::ApiGateway::RestApi
+  AwesomeFunctionPoller:
+    DependsOn: [AwesomeFunctionlambda]
+    Properties:
+      Description: AwesomeFunction Poller
+      Name: AwesomeFunctionPoller
+      ScheduleExpression: rate(5 minutes)
+      State: ENABLED
+      Targets:
+      - Arn: !GetAtt [AwesomeFunctionlambda, Arn]
+        Id: AwesomeFunction
+    Type: AWS::Events::Rule
+  AwesomeFunctionPollerPermission:
+    DependsOn: [AwesomeFunctionlambda, AwesomeFunctionPoller]
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref 'AwesomeFunctionlambda'
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt [AwesomeFunctionPoller, Arn]
+    Type: AWS::Lambda::Permission
+  AwesomeFunctionlambda:
+    Properties:
+      Code:
+        ZipFile: 'exports.handler = (event, context, callback) => {
+
+          console.log(JSON.stringify(event));
+
+          callback(null, "some success message");
+
+          };'
+      Description: Creates a new RestApi
+      FunctionName: AwesomeFunction
+      Handler: index.handler
+      MemorySize: 128
+      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/TestRoleName'
+      Runtime: nodejs6.10
+      Timeout: '10'
+    Type: AWS::Lambda::Function
+  abcdefg12da235b30ac064107886b58f2b528b6c1Deployment:
+    DependsOn: [testGETMethod]
+    Properties:
+      RestApiId: abcdefg12
+      StageName: dev
+    Type: AWS::ApiGateway::Deployment
+  testGETMethod:
+    DependsOn: [testPath]
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+        - StatusCode: '200'
+        RequestTemplates:
+          application/json: '{
+
+            "param1": "$input.params(''param1'')",
+
+            "param2": "$input.params(''param2'')",
+
+            "param3": "$input.params(''param3'')"
+
+            }'
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AwesomeFunctionlambda.Arn}/invocations'
+      MethodResponses:
+      - StatusCode: '200'
+      RequestParameters:
+        method.request.querystring.param1: false
+        method.request.querystring.param2: false
+        method.request.querystring.param3: false
+      ResourceId: !Ref 'testPath'
+      RestApiId: !Ref 'ApiNameapi'
+    Type: AWS::ApiGateway::Method
+  testGETPathPermission:
+    DependsOn: [ApiNameapi, AwesomeFunctionlambda, testGETMethod]
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref 'AwesomeFunctionlambda'
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiNameapi}/*/GET/test'
+    Type: AWS::Lambda::Permission
+  testPath:
+    DependsOn: [ApiNameapi]
+    Properties:
+      ParentId: !GetAtt [ApiNameapi, RootResourceId]
+      PathPart: test
+      RestApiId: !Ref 'ApiNameapi'
+    Type: AWS::ApiGateway::Resource
+  troposphereRefobjectat0x038E7B50348708f8517f482db75a8b948327beeaDeployment:
+    DependsOn: [testGETMethod]
+    Properties:
+      RestApiId: !Ref 'ApiNameapi'
+      StageName: dev
+    Type: AWS::ApiGateway::Deployment

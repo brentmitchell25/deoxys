@@ -1,0 +1,7 @@
+{
+    "ApplicationName": "Test",
+    "Service": "sqs",
+    "Queues": [{
+        "QueueName": "TestQ"
+    }]
+}

@@ -1,0 +1,23 @@
+{
+    "ApplicationName": "Test",
+    "Service": "sns",
+    "Topics": [{
+            "TopicName": "TestTopic1"
+        },
+        {
+            "TopicName": "TestTopic2",
+            "Subscriptions": [{
+                "Endpoint": "TestQ",
+                "Protocol": "sqs"
+            }]
+        },
+        {
+            "CreateTopic": false,
+            "Subscriptions": [{
+                "Endpoint": "TestLambda",
+                "Protocol": "lambda"
+            }],
+            "TopicName": "TestTopic3"
+        }
+    ]
+}
