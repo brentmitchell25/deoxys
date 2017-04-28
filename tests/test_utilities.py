@@ -4,19 +4,12 @@ from sns import sns
 from s3 import s3
 from kms import kms
 from iam import iam
-from apigateway import apigateway
 from dynamodb import dynamodb
 from troposphere import Template
 from cfn_flip import flip, to_yaml
-from boto3.dynamodb.conditions import Key
-from cStringIO import StringIO
 import ConfigParser
-import boto3
 import re
 import networkx as nx
-import matplotlib.pyplot as plt
-import os
-import zipfile
 import glob, os
 import json
 regex = re.compile('[^a-zA-Z0-9]')

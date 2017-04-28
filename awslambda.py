@@ -200,11 +200,15 @@ def awslambda(item, template, defaults, G):
             if 'Poller' in function:
                 pollerId = functionId + 'Poller'
                 permissionId = pollerId + 'Permission'
+                if 'Rate' in function['Poller']:
+                    scheduleExpression = "rate(" + str(function['Poller']['Rate']) + ")"
+                elif 'Cron' in function['Poller']: 
+                    scheduleExpression = "cron(" + str(function['Poller']['Cron']) + ")"
                 poller = Rule(
                     pollerId,
                     Name=function['FunctionName'] + 'Poller',
                     Description=function['FunctionName'] + " Poller",
-                    ScheduleExpression="rate(" + str(function['Poller']['Rate']) + ")",
+                    ScheduleExpression=scheduleExpression,
                     State="DISABLED" if 'Enabled' in function['Poller'] and str(function['Poller']['Enabled']).lower() == 'false' else 'ENABLED',
                     Targets=[Target(
                         Arn=GetAtt(func, "Arn"),
