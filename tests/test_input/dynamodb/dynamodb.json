@@ -1,0 +1,95 @@
+{
+    "ApplicationName": "Test",
+    "Protocol": "dynamodb",
+    "Tables": [{
+            "KeySchema": [{
+                "AttributeName": "ResultKey",
+                "KeyType": "HASH"
+            }],
+            "TableName": "Table1"
+        }, {
+            "AttributeDefinitions": [{
+                    "AttributeName": "PartKey",
+                    "AttributeType": "S"
+                },
+                {
+                    "AttributeName": "SortKey",
+                    "AttributeType": "S"
+                }
+            ],
+            "KeySchema": [{
+                    "AttributeName": "PartKey",
+                    "KeyType": "HASH"
+                },
+                {
+                    "AttributeName": "SortKey",
+                    "KeyType": "RANGE"
+                }
+            ],
+            "TableName": "Table2"
+        },
+        {
+            "AttributeDefinitions": [{
+                    "AttributeName": "PartKey",
+                    "AttributeType": "S"
+                },
+                {
+                    "AttributeName": "SortKey",
+                    "AttributeType": "S"
+                }
+            ],
+            "KeySchema": [{
+                    "AttributeName": "PartKey",
+                    "KeyType": "HASH"
+                },
+                {
+                    "AttributeName": "SortKey",
+                    "KeyType": "RANGE"
+                }
+            ],
+            "ProvisionedThroughput": {
+                "ReadCapacityUnits": "1",
+                "WriteCapacityUnits": "100"
+            },
+            "GlobalSecondaryIndexes": [{
+                "IndexName": "myGSI",
+                "KeySchema": [{
+                        "AttributeName": "NewHash",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "SortKey",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "NonKeyAttributes": ["Album", "NumberOfSongs"],
+                    "ProjectionType": "INCLUDE"
+                }
+            }],
+            "LocalSecondaryIndexes": [{
+                "IndexName": "myLSI",
+                "KeySchema": [{
+                        "AttributeName": "Album",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "Sales",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "NonKeyAttributes": ["Artist", "NumberOfSongs"],
+                    "ProjectionType": "INCLUDE"
+                }
+            }],
+            "TableName": "Table3",
+            "Triggers": [{
+                "FunctionName": "TestFunction"
+            }],
+            "StreamSpecification": {
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+            }
+        }
+    ]
+}

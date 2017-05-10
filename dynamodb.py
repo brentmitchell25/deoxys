@@ -13,12 +13,14 @@ dynamodbImg = './AWS_Simple_Icons/Database/Database_AmazonDynamoDB_table.png'
 
 regex = re.compile('[^a-zA-Z0-9]')
 
+
 def keySchema(keySchemas, defaults):
     return [KeySchema(AttributeName=keySchema["AttributeName"],
                       KeyType=keySchema["KeyType"] if "KeyType" in keySchema else defaults.get("DEFAULT",
                                                                                                "AttributeType")) for
             keySchema in
             keySchemas]
+
 
 def getProjection(projection):
     if "NonKeyAttributes" in projection and "ProjectionType" in projection:
@@ -37,15 +39,22 @@ def getProjection(projection):
     return retVal
 
 
+def getAttributeDefinitions(table, defaults):
+    if "AttributeDefinitions" in table:
+        return [AttributeDefinition(AttributeName=attribute["AttributeName"],
+                                    AttributeType=attribute["AttributeType"]) for attribute in
+                table["AttributeDefinitions"]]
+
+    return [AttributeDefinition(AttributeName=attribute["AttributeName"],
+                                AttributeType=defaults.get("DEFAULT", "AttributeType")) for attribute in
+            table["KeySchema"]]
+
+
 def dynamodb(item, G, defaults):
     if 'Tables' in item:
         for table in item['Tables']:
             parameters = {
-                "AttributeDefinitions": [AttributeDefinition(AttributeName=attribute["AttributeName"],
-                                                             AttributeType=attribute[
-                                                                 "AttributeType"] if "AttributeType" in attribute else
-                                                             defaults.get("DEFAULT", "AttributeType")) for attribute in
-                                         table["AttributeDefinitions"]],
+                "AttributeDefinitions": getAttributeDefinitions(table, defaults=defaults),
                 "GlobalSecondaryIndexes": [GlobalSecondaryIndex(
                     IndexName=globalSecondaryIndex["IndexName"],
                     KeySchema=keySchema(globalSecondaryIndex["KeySchema"], defaults=defaults),
@@ -62,13 +71,15 @@ def dynamodb(item, G, defaults):
                                                                                                                                     "ProvisionedThroughput"] else
                                                defaults.get("DEFAULT", "WriteCapacityUnits"))
                     )
-                ) for globalSecondaryIndex in table["GlobalSecondaryIndexes"]] if "GlobalSecondaryIndexes" in table else None,
+                ) for globalSecondaryIndex in
+                    table["GlobalSecondaryIndexes"]] if "GlobalSecondaryIndexes" in table else None,
                 "KeySchema": keySchema(table["KeySchema"], defaults=defaults),
                 "LocalSecondaryIndexes": [LocalSecondaryIndex(
                     IndexName=localSecondaryIndex["IndexName"],
                     KeySchema=keySchema(localSecondaryIndex["KeySchema"], defaults=defaults),
                     Projection=getProjection(localSecondaryIndex["Projection"]),
-                ) for localSecondaryIndex in table["LocalSecondaryIndexes"]] if "LocalSecondaryIndexes" in table else None,
+                ) for localSecondaryIndex in
+                    table["LocalSecondaryIndexes"]] if "LocalSecondaryIndexes" in table else None,
                 "ProvisionedThroughput": ProvisionedThroughput(
                     ReadCapacityUnits=int(table["ProvisionedThroughput"][
                                               "ReadCapacityUnits"] if "ProvisionedThroughput" in table and "ReadCapacityUnits" in
@@ -110,7 +121,7 @@ def dynamodb(item, G, defaults):
                         "DependsOn": [tableId]
                     }
                     eventSourceMappingId = regex.sub("", trigger[
-                            "FunctionName"] if "FunctionName" in trigger else trigger) + tableId + "EventSourceMapping"
+                        "FunctionName"] if "FunctionName" in trigger else trigger) + tableId + "EventSourceMapping"
                     eventSourceMapping = EventSourceMapping(
                         eventSourceMappingId,
                         **dict((k, v) for k, v in parameters.iteritems() if v is not None)
@@ -118,7 +129,8 @@ def dynamodb(item, G, defaults):
                     utilities.mergeNode(G, id=eventSourceMappingId, resource=eventSourceMapping, image=lambdaImg,
                                         name="EventSourceMapping")
 
-                    funcId = regex.sub("", trigger["FunctionName"] + 'lambda' if "FunctionName" in trigger else trigger + 'lambda')
+                    funcId = regex.sub("", trigger[
+                                               "FunctionName"] + 'lambda' if "FunctionName" in trigger else trigger + 'lambda')
 
                     G.add_edge(eventSourceMappingId, tableId)
                     G.add_edge(eventSourceMappingId, funcId)

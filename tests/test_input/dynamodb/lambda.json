@@ -1,0 +1,9 @@
+{
+  "ApplicationName": "Test",
+  "Functions": [{
+    "FunctionName": "TestFunction",
+    "Role": "TestRoleName",
+    "Description": "Used by dynamodb trigger"
+  }],
+  "Service": "lambda"
+}

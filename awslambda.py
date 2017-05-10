@@ -172,7 +172,7 @@ def awslambda(item, template, defaults, G):
                 "Handler": function[
                     'Handler'] if 'Handler' in function else 'index.handler',
                 "Environment": Environment(
-                    Variables={key: value for key, value in
+                    Variables={key: str(value) for key, value in
                                list(function["Environment"]["Variables"].items())}
                 ) if 'Environment' in function else None,
                 "VpcConfig": getVpcConfig(function, defaults=defaults),
