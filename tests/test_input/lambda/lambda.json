@@ -28,6 +28,30 @@
       "VpcConfig": true
     },
     {
+      "FunctionName": "AwesomeFunctionWithJsonInput",
+      "Description": "Polling cron with JSON input",
+      "Code": {
+        "S3Bucket": "lambda-bucket",
+        "S3Key": "test.zip"
+      },
+      "Environment": {
+        "Variables": {
+          "VARIABLE_1": "Some environement variable",
+          "VARIABLE_2": "Another environment variable"
+        }
+      },
+      "Poller": {
+        "Cron": "0 12 * * ? *",
+        "Input": "{\"Test1\": \"Test Input 1\", \"Test2\": \"Test Input 2\"}"
+      },
+      "Handler": "index.handler",
+      "MemorySize": 256,
+      "Role": "TestRoleName",
+      "Runtime": "nodejs6.10",
+      "Timeout": 60,
+      "VpcConfig": true
+    },
+    {
       "Api": {
         "HttpMethod": "GET",
         "Path": "test",

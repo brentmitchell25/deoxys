@@ -12,6 +12,7 @@ import re
 import utilities
 import json
 import matplotlib.image as mpimg
+import os
 
 lambdaImg = './AWS_Simple_Icons/Compute/Compute_AWSLambda.png'
 apiGatewayImg = './AWS_Simple_Icons/Application Services/ApplicationServices_AmazonAPIGateway.png'
@@ -150,8 +151,13 @@ def getVpcConfig(function, defaults):
     vpcConfig = None
     if 'VpcConfig' in function and str(function['VpcConfig']).lower().strip() == "true":
         vpcConfig = VPCConfig(
-            SecurityGroupIds=(defaults.get('DEFAULT', 'LambdaSecurityGroupIds')).split(','),
-            SubnetIds=(defaults.get('DEFAULT', 'LambdaSubnetIds')).split(',')
+            SecurityGroupIds=(
+                os.environ['LAMBDA_SECURITY_GROUPS'] if os.getenv('LAMBDA_SECURITY_GROUPS') else defaults.get('DEFAULT',
+                                                                                                              'LambdaSecurityGroupIds')).split(
+                ','),
+            SubnetIds=(os.environ['LAMBDA_SUBNET_IDS'] if os.getenv('LAMBDA_SUBNET_IDS') else defaults.get('DEFAULT',
+                                                                                                           'LambdaSubnetIds')).split(
+                ',')
         )
     elif 'VpcConfig' in function and str(function['VpcConfig']).lower().strip() != "false":
         vpcConfig = VPCConfig(
@@ -159,6 +165,30 @@ def getVpcConfig(function, defaults):
             SubnetIds=function['VpcConfig']['SubnetIds'].split(',')
         )
     return vpcConfig
+
+
+def getTarget(poller, func, functionId):
+    params = {
+        "Arn": GetAtt(func, "Arn"),
+        "Id": functionId,
+        "Input": poller['Input'] if 'Input' in poller else None,
+        "InputPath": poller['InputPath'] if 'InputPath' in poller else None
+    }
+    return Target(
+        **dict((k, v) for k, v in params.iteritems() if v is not None)
+    )
+
+
+def getRule(pollerId, scheduleExpression, function, poller, func, functionId):
+    return Rule(
+        pollerId,
+        Name=function['FunctionName'] + 'Poller',
+        Description=function['FunctionName'] + " Poller",
+        ScheduleExpression=scheduleExpression,
+        State="DISABLED" if 'Enabled' in poller and str(
+            poller['Enabled']).lower() == 'false' else 'ENABLED',
+        Targets=[getTarget(poller, func=func, functionId=functionId)]
+    )
 
 
 def awslambda(item, template, defaults, G):
@@ -200,21 +230,12 @@ def awslambda(item, template, defaults, G):
             if 'Poller' in function:
                 pollerId = functionId + 'Poller'
                 permissionId = pollerId + 'Permission'
+                scheduleExpression = ""
                 if 'Rate' in function['Poller']:
                     scheduleExpression = "rate(" + str(function['Poller']['Rate']) + ")"
-                elif 'Cron' in function['Poller']: 
+                elif 'Cron' in function['Poller']:
                     scheduleExpression = "cron(" + str(function['Poller']['Cron']) + ")"
-                poller = Rule(
-                    pollerId,
-                    Name=function['FunctionName'] + 'Poller',
-                    Description=function['FunctionName'] + " Poller",
-                    ScheduleExpression=scheduleExpression,
-                    State="DISABLED" if 'Enabled' in function['Poller'] and str(function['Poller']['Enabled']).lower() == 'false' else 'ENABLED',
-                    Targets=[Target(
-                        Arn=GetAtt(func, "Arn"),
-                        Id=functionId
-                    )],
-                )
+                poller = getRule(pollerId, scheduleExpression=scheduleExpression, function=function, poller=function['Poller'], func=func, functionId=functionId)
                 permission = Permission(
                     permissionId,
                     Action="lambda:InvokeFunction",
@@ -272,7 +293,6 @@ def awslambda(item, template, defaults, G):
                     apiId = str(function['Api']['RestApi']['Id'])
                     resourceId = str(function['Api']['RestApi']["ResourceId"])
 
-                apiResourceObj = None
                 apiResource = None
                 pathToMethod = ""
                 if 'Path' in parameters:
