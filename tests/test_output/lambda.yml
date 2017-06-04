@@ -4,30 +4,30 @@ Resources:
     Properties:
       Name: ApiName
     Type: AWS::ApiGateway::RestApi
-  AwesomeFunction3d101c6dfd704750947ecb8246b4d163Poller:
+  AwesomeFunction0Poller:
     DependsOn: [AwesomeFunctionlambda]
     Properties:
       Description: AwesomeFunction Poller
-      Name: AwesomeFunctionPoller
+      Name: AwesomeFunction0Poller
       ScheduleExpression: rate(5 minutes)
       State: ENABLED
       Targets:
       - Arn: !GetAtt [AwesomeFunctionlambda, Arn]
         Id: AwesomeFunction
     Type: AWS::Events::Rule
-  AwesomeFunction3d101c6dfd704750947ecb8246b4d163Poller3d101c6dfd704750947ecb8246b4d163Permission:
-    DependsOn: [AwesomeFunctionlambda, AwesomeFunction3d101c6dfd704750947ecb8246b4d163Poller]
+  AwesomeFunction0Poller0Permission:
+    DependsOn: [AwesomeFunction0Poller, AwesomeFunctionlambda]
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref 'AwesomeFunctionlambda'
       Principal: events.amazonaws.com
-      SourceArn: !GetAtt [AwesomeFunction3d101c6dfd704750947ecb8246b4d163Poller, Arn]
+      SourceArn: !GetAtt [AwesomeFunction0Poller, Arn]
     Type: AWS::Lambda::Permission
-  AwesomeFunctionWithJsonInput8ab4c903f3ae43b3b5d20f60e619dd86Poller:
+  AwesomeFunctionWithJsonInput0Poller:
     DependsOn: [AwesomeFunctionWithJsonInputlambda]
     Properties:
       Description: AwesomeFunctionWithJsonInput Poller
-      Name: AwesomeFunctionWithJsonInputPoller
+      Name: AwesomeFunctionWithJsonInput0Poller
       ScheduleExpression: cron(0 12 * * ? *)
       State: ENABLED
       Targets:
@@ -35,21 +35,19 @@ Resources:
         Id: AwesomeFunctionWithJsonInput
         Input: '{"Test1": "Test Input 1", "Test2": "Test Input 2"}'
     Type: AWS::Events::Rule
-  AwesomeFunctionWithJsonInput8ab4c903f3ae43b3b5d20f60e619dd86Poller8ab4c903f3ae43b3b5d20f60e619dd86Permission:
-    DependsOn: [AwesomeFunctionWithJsonInput8ab4c903f3ae43b3b5d20f60e619dd86Poller,
-      AwesomeFunctionWithJsonInputlambda]
+  AwesomeFunctionWithJsonInput0Poller0Permission:
+    DependsOn: [AwesomeFunctionWithJsonInput0Poller, AwesomeFunctionWithJsonInputlambda]
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref 'AwesomeFunctionWithJsonInputlambda'
       Principal: events.amazonaws.com
-      SourceArn: !GetAtt [AwesomeFunctionWithJsonInput8ab4c903f3ae43b3b5d20f60e619dd86Poller,
-        Arn]
+      SourceArn: !GetAtt [AwesomeFunctionWithJsonInput0Poller, Arn]
     Type: AWS::Lambda::Permission
-  AwesomeFunctionWithJsonInputb57fe3377dc54bf3a65b30890d57407cPoller:
+  AwesomeFunctionWithJsonInput1Poller:
     DependsOn: [AwesomeFunctionWithJsonInputlambda]
     Properties:
       Description: AwesomeFunctionWithJsonInput Poller
-      Name: AwesomeFunctionWithJsonInputPoller
+      Name: AwesomeFunctionWithJsonInput1Poller
       ScheduleExpression: rate(5 minutes)
       State: ENABLED
       Targets:
@@ -57,15 +55,13 @@ Resources:
         Id: AwesomeFunctionWithJsonInput
         Input: '{"Test3": "Test Input 3", "Test4": "Test Input 4"}'
     Type: AWS::Events::Rule
-  AwesomeFunctionWithJsonInputb57fe3377dc54bf3a65b30890d57407cPollerb57fe3377dc54bf3a65b30890d57407cPermission:
-    DependsOn: [AwesomeFunctionWithJsonInputb57fe3377dc54bf3a65b30890d57407cPoller,
-      AwesomeFunctionWithJsonInputlambda]
+  AwesomeFunctionWithJsonInput1Poller1Permission:
+    DependsOn: [AwesomeFunctionWithJsonInputlambda, AwesomeFunctionWithJsonInput1Poller]
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref 'AwesomeFunctionWithJsonInputlambda'
       Principal: events.amazonaws.com
-      SourceArn: !GetAtt [AwesomeFunctionWithJsonInputb57fe3377dc54bf3a65b30890d57407cPoller,
-        Arn]
+      SourceArn: !GetAtt [AwesomeFunctionWithJsonInput1Poller, Arn]
     Type: AWS::Lambda::Permission
   AwesomeFunctionWithJsonInputlambda:
     Properties:
@@ -105,7 +101,7 @@ Resources:
       Runtime: nodejs6.10
       Timeout: '10'
     Type: AWS::Lambda::Function
-  abcdefg1217c71e6bc5c04ad59e7b90afa424ac54Deployment:
+  abcdefg12a32e2c72eb384d51b91491374b2df688Deployment:
     DependsOn: [testGETMethod]
     Properties:
       RestApiId: abcdefg12
@@ -156,7 +152,7 @@ Resources:
       PathPart: test
       RestApiId: !Ref 'ApiNameapi'
     Type: AWS::ApiGateway::Resource
-  troposphereRefobjectat0x038D45509a435887d19e43da9a4b6dd4f783fff1Deployment:
+  troposphereRefobjectat0x03926070bf8ea70edc3245b485789bec910dffa9Deployment:
     DependsOn: [testGETMethod]
     Properties:
       RestApiId: !Ref 'ApiNameapi'

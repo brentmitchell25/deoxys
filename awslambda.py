@@ -179,10 +179,10 @@ def getTarget(poller, func, functionId):
     )
 
 
-def getRule(pollerId, scheduleExpression, function, poller, func, functionId):
+def getRule(pollerId, scheduleExpression, function, poller, func, functionId, index):
     return Rule(
         pollerId,
-        Name=function['FunctionName'] + 'Poller',
+        Name=function['FunctionName'] + str(index) + 'Poller',
         Description=function['FunctionName'] + " Poller",
         ScheduleExpression=scheduleExpression,
         State="DISABLED" if 'Enabled' in poller and str(
@@ -230,17 +230,15 @@ def awslambda(item, template, defaults, G):
             if 'Poller' in function:
                 if isinstance(function['Poller'], dict):
                     function['Poller'] = [function['Poller']]
-                print(function['Poller'])
-                for poller in function['Poller']:
-                    uniqueId = str(uuid.uuid4())
-                    pollerId = regex.sub("", functionId + uniqueId + 'Poller')
-                    permissionId = regex.sub("", pollerId + uniqueId + 'Permission')
+                for idx, poller in enumerate(function['Poller']):
+                    pollerId = regex.sub("", functionId + str(idx) + 'Poller')
+                    permissionId = regex.sub("", pollerId + str(idx) + 'Permission')
                     scheduleExpression = ""
                     if 'Rate' in poller:
                         scheduleExpression = "rate(" + str(poller['Rate']) + ")"
                     elif 'Cron' in poller:
                         scheduleExpression = "cron(" + str(poller['Cron']) + ")"
-                    rule = getRule(pollerId, scheduleExpression=scheduleExpression, function=function, poller=poller, func=func, functionId=functionId)
+                    rule = getRule(pollerId, scheduleExpression=scheduleExpression, function=function, poller=poller, func=func, functionId=functionId, index=idx)
                     permission = Permission(
                         permissionId,
                         Action="lambda:InvokeFunction",
