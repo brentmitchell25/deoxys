@@ -40,10 +40,13 @@
           "VARIABLE_2": "Another environment variable"
         }
       },
-      "Poller": {
+      "Poller": [{
         "Cron": "0 12 * * ? *",
         "Input": "{\"Test1\": \"Test Input 1\", \"Test2\": \"Test Input 2\"}"
-      },
+      }, {
+        "Rate": "5 minutes",
+        "Input": "{\"Test3\": \"Test Input 3\", \"Test4\": \"Test Input 4\"}"
+      }],
       "Handler": "index.handler",
       "MemorySize": 256,
       "Role": "TestRoleName",

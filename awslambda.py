@@ -228,28 +228,33 @@ def awslambda(item, template, defaults, G):
             utilities.mergeNode(G, id=graphFunctionId, resource=func, image=lambdaImg, name=parameters['FunctionName'])
 
             if 'Poller' in function:
-                pollerId = functionId + 'Poller'
-                permissionId = pollerId + 'Permission'
-                scheduleExpression = ""
-                if 'Rate' in function['Poller']:
-                    scheduleExpression = "rate(" + str(function['Poller']['Rate']) + ")"
-                elif 'Cron' in function['Poller']:
-                    scheduleExpression = "cron(" + str(function['Poller']['Cron']) + ")"
-                poller = getRule(pollerId, scheduleExpression=scheduleExpression, function=function, poller=function['Poller'], func=func, functionId=functionId)
-                permission = Permission(
-                    permissionId,
-                    Action="lambda:InvokeFunction",
-                    Principal="events.amazonaws.com",
-                    SourceArn=GetAtt(poller, "Arn"),
-                    FunctionName=Ref(func)
-                )
-                utilities.mergeNode(G, id=pollerId, resource=poller, image=lambdaImg,
-                                    name=pollerId)
-                utilities.mergeNode(G, id=permissionId, resource=permission, image=lambdaImg,
-                                    name=pollerId + ' InvokePermission')
-                G.add_edge(pollerId, graphFunctionId)
-                G.add_edge(permissionId, graphFunctionId)
-                G.add_edge(permissionId, pollerId)
+                if isinstance(function['Poller'], dict):
+                    function['Poller'] = [function['Poller']]
+                print(function['Poller'])
+                for poller in function['Poller']:
+                    uniqueId = str(uuid.uuid4())
+                    pollerId = regex.sub("", functionId + uniqueId + 'Poller')
+                    permissionId = regex.sub("", pollerId + uniqueId + 'Permission')
+                    scheduleExpression = ""
+                    if 'Rate' in poller:
+                        scheduleExpression = "rate(" + str(poller['Rate']) + ")"
+                    elif 'Cron' in poller:
+                        scheduleExpression = "cron(" + str(poller['Cron']) + ")"
+                    rule = getRule(pollerId, scheduleExpression=scheduleExpression, function=function, poller=poller, func=func, functionId=functionId)
+                    permission = Permission(
+                        permissionId,
+                        Action="lambda:InvokeFunction",
+                        Principal="events.amazonaws.com",
+                        SourceArn=GetAtt(rule, "Arn"),
+                        FunctionName=Ref(func)
+                    )
+                    utilities.mergeNode(G, id=pollerId, resource=rule, image=lambdaImg,
+                                        name=pollerId)
+                    utilities.mergeNode(G, id=permissionId, resource=permission, image=lambdaImg,
+                                        name=pollerId + ' InvokePermission')
+                    G.add_edge(pollerId, graphFunctionId)
+                    G.add_edge(permissionId, graphFunctionId)
+                    G.add_edge(permissionId, pollerId)
             if 'Api' in function:
                 if str(function['Api']['Path']).startswith('/'):
                     function['Api']['Path'] = str(function['Api']['Path'])[1:]
