@@ -182,7 +182,7 @@ def getTarget(poller, func, functionId):
 def getRule(pollerId, scheduleExpression, function, poller, func, functionId, index):
     return Rule(
         pollerId,
-        Name=function['FunctionName'] + str(index) + 'Poller',
+        Name=function['FunctionName'] + '-' + (poller['Name'] if 'Name' in poller else str(index)) + '-Poller',
         Description=function['FunctionName'] + " Poller",
         ScheduleExpression=scheduleExpression,
         State="DISABLED" if 'Enabled' in poller and str(
