@@ -85,7 +85,7 @@ def sns(item, G, defaults):
                         statement = Statement(
                             Effect="Allow",
                             Action=[sqs.SendMessage],
-                            Principal=Principal("Service", ["sns.amazonaws.com"]),
+                            Principal=Principal('*'),
                             Resource=[endpoint],
                             Condition=Condition(ArnEquals({
                                 "aws:SourceArn": [Join("", ["arn:aws:sns:", Ref("AWS::Region"), ":",
