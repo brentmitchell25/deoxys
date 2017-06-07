@@ -8,7 +8,7 @@ Resources:
     DependsOn: [AwesomeFunctionlambda]
     Properties:
       Description: AwesomeFunction Poller
-      Name: AwesomeFunction0Poller
+      Name: AwesomeFunction-0-Poller
       ScheduleExpression: rate(5 minutes)
       State: ENABLED
       Targets:
@@ -27,7 +27,7 @@ Resources:
     DependsOn: [AwesomeFunctionWithJsonInputlambda]
     Properties:
       Description: AwesomeFunctionWithJsonInput Poller
-      Name: AwesomeFunctionWithJsonInput0Poller
+      Name: AwesomeFunctionWithJsonInput-0-Poller
       ScheduleExpression: cron(0 12 * * ? *)
       State: ENABLED
       Targets:
@@ -47,7 +47,7 @@ Resources:
     DependsOn: [AwesomeFunctionWithJsonInputlambda]
     Properties:
       Description: AwesomeFunctionWithJsonInput Poller
-      Name: AwesomeFunctionWithJsonInput1Poller
+      Name: AwesomeFunctionWithJsonInput-TestPollerName-Poller
       ScheduleExpression: rate(5 minutes)
       State: ENABLED
       Targets:
@@ -101,7 +101,7 @@ Resources:
       Runtime: nodejs6.10
       Timeout: '10'
     Type: AWS::Lambda::Function
-  abcdefg12a32e2c72eb384d51b91491374b2df688Deployment:
+  abcdefg1277b56b1fb3804174991c3d6958b553b1Deployment:
     DependsOn: [testGETMethod]
     Properties:
       RestApiId: abcdefg12
@@ -152,7 +152,7 @@ Resources:
       PathPart: test
       RestApiId: !Ref 'ApiNameapi'
     Type: AWS::ApiGateway::Resource
-  troposphereRefobjectat0x03926070bf8ea70edc3245b485789bec910dffa9Deployment:
+  troposphereRefobjectat0x039A4490e139ad1d46744051be25e2708136497fDeployment:
     DependsOn: [testGETMethod]
     Properties:
       RestApiId: !Ref 'ApiNameapi'

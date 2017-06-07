@@ -43,7 +43,7 @@ Resources:
               aws:SourceArn: [!Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:TestTopic2']
           Effect: Allow
           Principal:
-            Service: [sns.amazonaws.com]
+            AWS: sns.amazonaws.com
           Resource: [!Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:TestQ']
         Version: '2012-10-17'
       Queues: [!Sub 'https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/TestQ']
