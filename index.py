@@ -40,12 +40,14 @@ def dependsOn(node, graph):
             retVal.append(regex.sub("", v))
     return retVal
 
+
 def writeTemplate(template, graph):
     for node in graph:
         depends = dependsOn(node, graph)
         if depends != [] and 'resource' in graph.node[node]:
             graph.node[node]['resource'].__setattr__('DependsOn', dependsOn(node, graph=graph))
         template.add_resource(graph.node[node]['resource'])
+
 
 def handler(event, context):
     t = Template()
@@ -91,17 +93,21 @@ def handler(event, context):
             writeTemplate(t, G)
             template = StringIO(to_yaml(t.to_json(), clean_up=True))
             s3Client.put_object(
-                Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                Bucket=os.environ['CLOUDFORMATION_BUCKET'] if os.getenv('CLOUDFORMATION_BUCKET') else config.get(
+                    'DEFAULT', 'CloudformationBucket'),
                 Key=applicationName + "/" + applicationName + ".template",
                 Body=template.read()
             )
             template.close()
             tmpName = str(uuid.uuid4())
-            nx.nx_pydot.write_dot(G, "{}{}-{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName))
+            nx.nx_pydot.write_dot(G, "{}{}-{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName,
+                                                          applicationName))
 
-            with open("{}{}-{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName), "rb") as dotFile:
+            with open("{}{}-{}.dot".format(config.get('DEFAULT', 'WriteFileDirectory'), tmpName, applicationName),
+                      "rb") as dotFile:
                 s3Client.put_object(
-                    Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                    Bucket=os.environ['CLOUDFORMATION_BUCKET'] if os.getenv('CLOUDFORMATION_BUCKET') else config.get(
+                        'DEFAULT', 'CloudformationBucket'),
                     Key='{}/{}.dot'.format(applicationName, applicationName),
                     Body=dotFile.read()
                 )
@@ -114,7 +120,7 @@ def handler(event, context):
 
             with open(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", "rb") as myzip:
                 s3Client.put_object(
-                    Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                    Bucket=os.environ['CLOUDFORMATION_BUCKET'] if os.getenv('CLOUDFORMATION_BUCKET') else config.get('DEFAULT', 'CloudformationBucket'),
                     Key=applicationName + "/" + applicationName + ".zip",
                     Body=myzip.read()
                 )
@@ -122,7 +128,8 @@ def handler(event, context):
             if iamTemplate is not None:
                 template = StringIO(to_yaml(iamTemplate.to_json(), clean_up=True))
                 s3Client.put_object(
-                    Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                    Bucket=os.environ['CLOUDFORMATION_BUCKET'] if os.getenv('CLOUDFORMATION_BUCKET') else config.get(
+                        'DEFAULT', 'CloudformationBucket'),
                     Key=applicationName + "/" + applicationName + "-IAM.template",
                     Body=template.read()
                 )
@@ -139,7 +146,8 @@ def handler(event, context):
                 with open(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + "-IAM.zip",
                           "rb") as myzip:
                     s3Client.put_object(
-                        Bucket=config.get('DEFAULT', 'CloudformationBucket'),
+                        Bucket=os.environ['CLOUDFORMATION_BUCKET'] if os.getenv(
+                            'CLOUDFORMATION_BUCKET') else config.get('DEFAULT', 'CloudformationBucket'),
                         Key=applicationName + "/" + applicationName + "-IAM.zip",
                         Body=myzip.read()
                     )

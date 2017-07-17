@@ -389,6 +389,7 @@ def awslambda(item, template, defaults, G):
                 utilities.mergeNode(G, id=methodId, resource=method, image=apiGatewayImg,
                                     name='Te' + '-' + str(parameters['HttpMethod']).upper())
 
+                # Requires uuid to signal a change for CloudFormation to update the stack
                 deploymentId = regex.sub("", str(apiId) + str(uuid.uuid4())) + 'Deployment'
                 deploymentParameters = {
                     "RestApiId": apiId,
