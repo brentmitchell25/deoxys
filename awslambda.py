@@ -231,7 +231,7 @@ def awslambda(item, template, defaults, G):
                 if isinstance(function['Poller'], dict):
                     function['Poller'] = [function['Poller']]
                 for idx, poller in enumerate(function['Poller']):
-                    pollerId = regex.sub("", functionId + 'Poller')
+                    pollerId = regex.sub("", functionId + (poller['Name'] if 'Name' in poller else str(idx)) 'Poller')
                     permissionId = regex.sub("", pollerId + 'Permission')
                     scheduleExpression = ""
                     if 'Rate' in poller:
