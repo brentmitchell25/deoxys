@@ -64,6 +64,7 @@ def handler(event, context):
             else:
                 applicationName = record['ApplicationName']
             protocols = dynamodbClient.Table('Application').query(
+                ConsistentRead=True,
                 KeyConditionExpression=Key('ApplicationName').eq(applicationName)
             )
             for item in protocols['Items']:
