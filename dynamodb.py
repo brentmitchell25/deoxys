@@ -1,18 +1,14 @@
 from troposphere.dynamodb import ProvisionedThroughput, Table, AttributeDefinition, KeySchema, GlobalSecondaryIndex, \
-    LocalSecondaryIndex, Projection, StreamSpecification
-from troposphere import Ref, Join, GetAtt
+    LocalSecondaryIndex, Projection, StreamSpecification, TimeToLiveSpecification
+from troposphere import GetAtt
 from troposphere.awslambda import EventSourceMapping
-from awacs.aws import Principal
-import awacs.awslambda as awslambda
 import re
 import utilities
-import matplotlib.image as mpimg
 
 lambdaImg = './AWS_Simple_Icons/Compute/Compute_AWSLambda.png'
 dynamodbImg = './AWS_Simple_Icons/Database/Database_AmazonDynamoDB_table.png'
 
 regex = re.compile('[^a-zA-Z0-9]')
-
 
 def keySchema(keySchemas, defaults):
     return [KeySchema(AttributeName=keySchema["AttributeName"],
@@ -49,6 +45,24 @@ def getAttributeDefinitions(table, defaults):
                                 AttributeType=defaults.get("DEFAULT", "AttributeType")) for attribute in
             table["KeySchema"]]
 
+
+def getTimeToLiveSpecification(table, defaults):
+    if 'TimeToLiveSpecification' not in table:
+        return None
+
+    if str(table['TimeToLiveSpecification']).lower().strip() == "true":
+        return TimeToLiveSpecification(
+            AttributeName=defaults.get("DEFAULT", "TimeToLiveSpecification"),
+            Enabled=defaults.get("DEFAULT", "TimeToLiveSpecificationEnabled"),
+        )
+    elif 'AttributeName' in table['TimeToLiveSpecification']:
+        return TimeToLiveSpecification(
+            AttributeName=table['TimeToLiveSpecification']['AttributeName'],
+            Enabled=table['TimeToLiveSpecification']['Enabled'] if 'Enabled' in table[
+                'TimeToLiveSpecification'] else defaults.get("DEFAULT", "TimeToLiveSpecificationEnabled"),
+        )
+    else:
+        return None
 
 def dynamodb(item, G, defaults):
     if 'Tables' in item:
@@ -99,6 +113,7 @@ def dynamodb(item, G, defaults):
                         "StreamSpecification"] else defaults.get("DEFAULT", "StreamViewType")
                 ),
                 "TableName": table["TableName"],
+                "TimeToLiveSpecification": getTimeToLiveSpecification(table, defaults=defaults)
             }
             tableId = regex.sub("", table['TableName']) + item['Protocol']
             tableResource = Table(

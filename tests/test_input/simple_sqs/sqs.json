@@ -10,7 +10,7 @@
             "FifoQueue": true,
             "MaximumReceiveSize": 262144,
             "MessageRetentionPeriod": 60,
-            "QueueName": "TestQ",
+            "QueueName": "TestQ.fifo",
             "ReceiveMessageWaitTimeSeconds": 0,
             "DeadLetterQueue": {
                 "MaxReceiveCount": 15,

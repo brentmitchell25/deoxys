@@ -15,7 +15,7 @@ Resources:
       - Arn: !GetAtt [AwesomeFunctionlambda, Arn]
         Id: AwesomeFunction
     Type: AWS::Events::Rule
-  AwesomeFunction0Poller0Permission:
+  AwesomeFunction0PollerPermission:
     DependsOn: [AwesomeFunction0Poller, AwesomeFunctionlambda]
     Properties:
       Action: lambda:InvokeFunction
@@ -35,7 +35,7 @@ Resources:
         Id: AwesomeFunctionWithJsonInput
         Input: '{"Test1": "Test Input 1", "Test2": "Test Input 2"}'
     Type: AWS::Events::Rule
-  AwesomeFunctionWithJsonInput0Poller0Permission:
+  AwesomeFunctionWithJsonInput0PollerPermission:
     DependsOn: [AwesomeFunctionWithJsonInput0Poller, AwesomeFunctionWithJsonInputlambda]
     Properties:
       Action: lambda:InvokeFunction
@@ -43,7 +43,7 @@ Resources:
       Principal: events.amazonaws.com
       SourceArn: !GetAtt [AwesomeFunctionWithJsonInput0Poller, Arn]
     Type: AWS::Lambda::Permission
-  AwesomeFunctionWithJsonInput1Poller:
+  AwesomeFunctionWithJsonInputTestPollerNamePoller:
     DependsOn: [AwesomeFunctionWithJsonInputlambda]
     Properties:
       Description: AwesomeFunctionWithJsonInput Poller
@@ -55,13 +55,13 @@ Resources:
         Id: AwesomeFunctionWithJsonInput
         Input: '{"Test3": "Test Input 3", "Test4": "Test Input 4"}'
     Type: AWS::Events::Rule
-  AwesomeFunctionWithJsonInput1Poller1Permission:
-    DependsOn: [AwesomeFunctionWithJsonInputlambda, AwesomeFunctionWithJsonInput1Poller]
+  AwesomeFunctionWithJsonInputTestPollerNamePollerPermission:
+    DependsOn: [AwesomeFunctionWithJsonInputTestPollerNamePoller, AwesomeFunctionWithJsonInputlambda]
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref 'AwesomeFunctionWithJsonInputlambda'
       Principal: events.amazonaws.com
-      SourceArn: !GetAtt [AwesomeFunctionWithJsonInput1Poller, Arn]
+      SourceArn: !GetAtt [AwesomeFunctionWithJsonInputTestPollerNamePoller, Arn]
     Type: AWS::Lambda::Permission
   AwesomeFunctionWithJsonInputlambda:
     Properties:
@@ -101,7 +101,7 @@ Resources:
       Runtime: nodejs6.10
       Timeout: '10'
     Type: AWS::Lambda::Function
-  abcdefg1277b56b1fb3804174991c3d6958b553b1Deployment:
+  abcdefg127f25ac7bbac24cd6b20a1783145b5e38Deployment:
     DependsOn: [testGETMethod]
     Properties:
       RestApiId: abcdefg12
@@ -152,7 +152,7 @@ Resources:
       PathPart: test
       RestApiId: !Ref 'ApiNameapi'
     Type: AWS::ApiGateway::Resource
-  troposphereRefobjectat0x039A4490e139ad1d46744051be25e2708136497fDeployment:
+  troposphereRefobjectat0x03A06750bd81fc31856741a7b2b38052907d77f9Deployment:
     DependsOn: [testGETMethod]
     Properties:
       RestApiId: !Ref 'ApiNameapi'

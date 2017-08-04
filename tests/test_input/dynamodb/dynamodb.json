@@ -26,7 +26,11 @@
                     "KeyType": "RANGE"
                 }
             ],
-            "TableName": "Table2"
+            "TableName": "Table2",
+            "TimeToLiveSpecification": {
+                "AttributeName": "TimeToLive",
+                "Enabled": false
+            }
         },
         {
             "AttributeDefinitions": [{
@@ -89,7 +93,8 @@
             }],
             "StreamSpecification": {
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
-            }
+            },
+            "TimeToLiveSpecification": true
         }
     ]
 }

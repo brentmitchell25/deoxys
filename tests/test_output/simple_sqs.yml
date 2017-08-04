@@ -1,16 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Resources:
-  TestQsqs:
+  TestQfifosqs:
     DependsOn: [TestQsqs]
     Properties:
       ContentBasedDeduplication: true
       DelaySeconds: '0'
       FifoQueue: true
       MessageRetentionPeriod: '60'
-      QueueName: TestQ
+      QueueName: TestQ.fifo
       ReceiveMessageWaitTimeSeconds: '0'
       RedrivePolicy:
         deadLetterTargetArn: !Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:TestQ'
         maxReceiveCount: 15
       VisibilityTimeout: '100'
+    Type: AWS::SQS::Queue
+  TestQsqs:
+    Properties:
+      MessageRetentionPeriod: '604800'
+      QueueName: TestQ
+      ReceiveMessageWaitTimeSeconds: '0'
     Type: AWS::SQS::Queue
