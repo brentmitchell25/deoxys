@@ -2,6 +2,7 @@ from troposphere.stepfunctions import StateMachine, Activity
 from troposphere import Join
 from troposphere import Ref
 import utilities
+import uuid
 import re
 
 regex = re.compile('[^a-zA-Z0-9]')
@@ -40,7 +41,7 @@ def stepfunctions(item, G, defaults):
             }
 
             if parameters['Activity'] is not None:
-                activityId = regex.sub("", parameters['Activity']['Name']) + 'Activity'
+                activityId = '{0}{1}'.format(regex.sub("", parameters['Activity']['Name']), 'Activity')
                 activity = Activity(
                     activityId,
                     **dict((k, v) for k, v in parameters['Activity'].iteritems() if v is not None)
@@ -49,7 +50,7 @@ def stepfunctions(item, G, defaults):
                                     name=parameters['Activity']['Name'])
 
             if parameters['StateMachine'] is not None:
-                stateMachineId = utilities.capString(regex.sub("", parameters['StateMachine']['DefinitionString']) + 'StateMachine', 80)
+                stateMachineId = '{0}{1}'.format(regex.sub("", str(uuid.uuid4())), 'StateMachine')
                 print stateMachineId
                 stateMachine = StateMachine(
                     stateMachineId,
