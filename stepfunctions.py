@@ -49,7 +49,8 @@ def stepfunctions(item, G, defaults):
                                     name=parameters['Activity']['Name'])
 
             if parameters['StateMachine'] is not None:
-                stateMachineId = utilities.capString(regex.sub("", parameters['StateMachine']['DefinitionString']) + 'StateMachine', 255)
+                stateMachineId = utilities.capString(regex.sub("", parameters['StateMachine']['DefinitionString']) + 'StateMachine', 80)
+                print stateMachineId
                 stateMachine = StateMachine(
                     stateMachineId,
                     **dict((k, v) for k, v in parameters['StateMachine'].iteritems() if v is not None)
