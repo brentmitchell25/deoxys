@@ -101,14 +101,14 @@ Resources:
       Runtime: nodejs6.10
       Timeout: '10'
     Type: AWS::Lambda::Function
-  abcdefg1233b762e498794e8c9cb1367c4c927890Deployment:
-    DependsOn: [testGETMethod]
+  abcdefg1238061c8a89d94bf0b587a788de389979Deployment:
+    DependsOn: [testGETMethod, testCors]
     Properties:
       RestApiId: abcdefg12
       StageName: dev
     Type: AWS::ApiGateway::Deployment
-  testGETMethod:
-    DependsOn: [testPath]
+  test2GETMethod:
+    DependsOn: [test2Path]
     Properties:
       AuthorizationType: AWS_IAM
       HttpMethod: GET
@@ -134,26 +134,98 @@ Resources:
         method.request.querystring.param1: false
         method.request.querystring.param2: false
         method.request.querystring.param3: false
-      ResourceId: !Ref 'testPath'
+      ResourceId: !Ref 'test2Path'
       RestApiId: !Ref 'ApiNameapi'
     Type: AWS::ApiGateway::Method
-  testGETPathPermission:
-    DependsOn: [ApiNameapi, AwesomeFunctionlambda, testGETMethod]
+  test2GETPathPermission:
+    DependsOn: [ApiNameapi, AwesomeFunctionlambda, test2GETMethod]
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref 'AwesomeFunctionlambda'
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiNameapi}/*/GET/test'
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiNameapi}/*/GET/test2'
     Type: AWS::Lambda::Permission
-  testPath:
+  test2Path:
     DependsOn: [ApiNameapi]
     Properties:
       ParentId: !GetAtt [ApiNameapi, RootResourceId]
-      PathPart: test
+      PathPart: test2
       RestApiId: !Ref 'ApiNameapi'
     Type: AWS::ApiGateway::Resource
-  troposphereRefobjectat0x110f10e507f471f90f03144589ceb143c87ae3d63Deployment:
-    DependsOn: [testGETMethod]
+  testCors:
+    DependsOn: [testPath]
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+            method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+            method.response.header.Access-Control-Allow-Origin: '''*'''
+          StatusCode: '200'
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+      - ResponseParameters:
+          method.response.header.Access-Control-Allow-Headers: true
+          method.response.header.Access-Control-Allow-Methods: true
+          method.response.header.Access-Control-Allow-Origin: true
+        StatusCode: '200'
+      ResourceId: !Ref 'testPath'
+      RestApiId: abcdefg12
+    Type: AWS::ApiGateway::Method
+  testGETMethod:
+    DependsOn: [testPath]
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: '''*'''
+          StatusCode: '200'
+        RequestTemplates:
+          application/json: '{
+
+            "param1": "$input.params(''param1'')",
+
+            "param2": "$input.params(''param2'')",
+
+            "param3": "$input.params(''param3'')"
+
+            }'
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AwesomeFunctionlambda.Arn}/invocations'
+      MethodResponses:
+      - ResponseParameters:
+          method.response.header.Access-Control-Allow-Origin: true
+        StatusCode: '200'
+      RequestParameters:
+        method.request.querystring.param1: false
+        method.request.querystring.param2: false
+        method.request.querystring.param3: false
+      ResourceId: !Ref 'testPath'
+      RestApiId: abcdefg12
+    Type: AWS::ApiGateway::Method
+  testGETPathPermission:
+    DependsOn: [AwesomeFunctionlambda, testGETMethod]
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref 'AwesomeFunctionlambda'
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:abcdefg12/*/GET/test'
+    Type: AWS::Lambda::Permission
+  testPath:
+    Properties:
+      ParentId: 12345678ab
+      PathPart: test
+      RestApiId: abcdefg12
+    Type: AWS::ApiGateway::Resource
+  troposphereRefobjectat0x039CAB9042c28e9fd8604dbfb36169fb6b1da0c0Deployment:
+    DependsOn: [test2GETMethod]
     Properties:
       RestApiId: !Ref 'ApiNameapi'
       StageName: dev

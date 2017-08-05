@@ -58,6 +58,7 @@
     {
       "Api": {
         "HttpMethod": "GET",
+        "Cors": true,
         "Path": "test",
         "RestApi": {
           "Id": "abcdefg12",
@@ -77,7 +78,7 @@
     {
       "Api": {
         "HttpMethod": "GET",
-        "Path": "test",
+        "Path": "test2",
         "RestApi": {
           "Name": "ApiName"
         },

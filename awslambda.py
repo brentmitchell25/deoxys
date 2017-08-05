@@ -36,25 +36,37 @@ def getRequestTemplate(params):
     return retVal
 
 
-def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
-    if isCors:
+def getIntegrationResponse(params, isOptionsMethod=False):
+    integrationResponseParameters = {
+        'StatusCode': '200',
+        'ResponseParameters': None
+    }
+    if str(params['Cors']).lower() == 'true':
+        if isOptionsMethod:
+            integrationResponseParameters['ResponseParameters'] = {
+                "method.response.header.Access-Control-Allow-Headers": '\'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token\'',
+                "method.response.header.Access-Control-Allow-Methods": '\'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT\'',
+                "method.response.header.Access-Control-Allow-Origin": '\'*\'',
+            }
+        else:
+            integrationResponseParameters['ResponseParameters'] = {
+                "method.response.header.Access-Control-Allow-Origin": '\'*\'',
+            }
+    return IntegrationResponse(**dict((k, v) for k, v in integrationResponseParameters.iteritems() if v is not None))
+
+
+def getIntegration(params, isAsynchronous=False, func=None, isOptionsMethod=False):
+    if str(params['Cors']).lower() and isOptionsMethod:
         integrationParameters = {
             'Type': "MOCK",
             'IntegrationResponses': [
-                IntegrationResponse(
-                    StatusCode='200',
-                    ResponseParameters={
-                        "method.response.header.Access-Control-Allow-Headers": '\'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token\'',
-                        "method.response.header.Access-Control-Allow-Methods": '\'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT\'',
-                        "method.response.header.Access-Control-Allow-Origin": '\'*\'',
-                    }
-                )
+                getIntegrationResponse(params=params, isOptionsMethod=isOptionsMethod)
             ],
             'RequestTemplates': {
                 "application/json": '{\"statusCode\": 200}'
             },
         }
-    elif isAsynchronous and str(params['HttpMethod']).upper() == 'GET':
+    elif str(params['Asynchronous']).lower() == 'true' and str(params['HttpMethod']).upper() == 'GET':
         integrationParameters = {
             'Type': "AWS",
             'Credentials': Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
@@ -63,9 +75,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
             'Uri': Join("", ["arn:aws:apigateway:us-east-1:lambda:path/",
                              params['Uri']]),
             'IntegrationResponses': [
-                IntegrationResponse(
-                    StatusCode='200'
-                )
+                getIntegrationResponse(params=params)
             ],
             'RequestTemplates': getRequestTemplate(
                 params['UrlQueryStringParameters']) if str(
@@ -84,9 +94,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
             'Uri': Join("", ["arn:aws:apigateway:us-east-1:lambda:path/",
                              params['Uri']]),
             'IntegrationResponses': [
-                IntegrationResponse(
-                    StatusCode='200'
-                )
+                getIntegrationResponse(params=params)
             ],
             'RequestParameters': {
                 "integration.request.header.X-Amz-Invocation-Type": '\'Event\''
@@ -104,9 +112,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
                 params['UrlQueryStringParameters']) if str(
                 params['HttpMethod']).upper() == 'GET' else None,
             'IntegrationResponses': [
-                IntegrationResponse(
-                    StatusCode='200'
-                )
+                getIntegrationResponse(params=params)
             ],
         }
     else:
@@ -119,9 +125,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isCors=False):
                          ":lambda:path/2015-03-31/functions/",
                          GetAtt(func, "Arn"), "/invocations"]),
             'IntegrationResponses': [
-                IntegrationResponse(
-                    StatusCode='200'
-                )
+                getIntegrationResponse(params=params)
             ],
         }
 
@@ -191,6 +195,27 @@ def getRule(pollerId, scheduleExpression, function, poller, func, functionId, in
     )
 
 
+def getMethodResponse(parameters, isOptionMethod=False):
+    methodResponseParameters = {
+        'StatusCode': '200',
+        'ResponseParameters': None,
+    }
+    if str(parameters['Cors']).lower() == 'true':
+        if isOptionMethod:
+            methodResponseParameters['ResponseParameters'] = {
+                'method.response.header.Access-Control-Allow-Headers': True,
+                'method.response.header.Access-Control-Allow-Methods': True,
+                'method.response.header.Access-Control-Allow-Origin': True,
+            }
+        else:
+            methodResponseParameters['ResponseParameters'] = {
+                'method.response.header.Access-Control-Allow-Origin': True,
+            }
+    return MethodResponse(
+        **dict((k, v) for k, v in methodResponseParameters.iteritems() if v is not None)
+    )
+
+
 def awslambda(item, template, defaults, G):
     if 'Functions' in item:
         for function in item['Functions']:
@@ -238,7 +263,8 @@ def awslambda(item, template, defaults, G):
                         scheduleExpression = "rate(" + str(poller['Rate']) + ")"
                     elif 'Cron' in poller:
                         scheduleExpression = "cron(" + str(poller['Cron']) + ")"
-                    rule = getRule(pollerId, scheduleExpression=scheduleExpression, function=function, poller=poller, func=func, functionId=functionId, index=idx)
+                    rule = getRule(pollerId, scheduleExpression=scheduleExpression, function=function, poller=poller,
+                                   func=func, functionId=functionId, index=idx)
                     permission = Permission(
                         permissionId,
                         Action="lambda:InvokeFunction",
@@ -327,16 +353,9 @@ def awslambda(item, template, defaults, G):
                         "ResourceId": resourceId if apiResource is None else Ref(apiResource),
                         "HttpMethod": 'OPTIONS',
                         "AuthorizationType": 'NONE',
-                        "Integration": getIntegration(parameters, isCors=True),
+                        "Integration": getIntegration(parameters, isOptionsMethod=True),
                         "MethodResponses": [
-                            MethodResponse(
-                                StatusCode='200',
-                                ResponseParameters={
-                                    'method.response.header.Access-Control-Allow-Headers': True,
-                                    'method.response.header.Access-Control-Allow-Methods': True,
-                                    'method.response.header.Access-Control-Allow-Origin': True,
-                                }
-                            )
+                            getMethodResponse(parameters=parameters, isOptionMethod=True)
                         ],
                     }
                     corsMethodId = regex.sub("", pathToMethod) + 'Cors'
@@ -356,9 +375,7 @@ def awslambda(item, template, defaults, G):
                         "AuthorizationType": parameters['AuthorizationType'],
                         "Integration": getIntegration(parameters, isAsynchronous=True, func=func),
                         "MethodResponses": [
-                            MethodResponse(
-                                StatusCode='200'
-                            )
+                            getMethodResponse(parameters=parameters)
                         ],
                     }
                 else:
@@ -376,9 +393,7 @@ def awslambda(item, template, defaults, G):
                         if parameters['UrlQueryStringParameters'] != None else None,
                         "RequestTemplates": parameters['RequestParameters'],
                         "MethodResponses": [
-                            MethodResponse(
-                                StatusCode='200'
-                            )
+                            getMethodResponse(parameters=parameters)
                         ],
                     }
                 methodId = regex.sub("", pathToMethod + parameters['HttpMethod']) + 'Method'
