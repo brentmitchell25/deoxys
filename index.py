@@ -4,7 +4,7 @@ from sns import sns
 from s3 import s3
 from kms import kms
 from iam import iam
-from apigateway import apigateway
+from stepfunctions import stepfunctions
 from dynamodb import dynamodb
 from troposphere import Template
 from boto3.dynamodb.conditions import Key
@@ -84,6 +84,8 @@ def handler(event, context):
                     kms(item, G, defaults=config)
                 if item['Service'] == "dynamodb":
                     dynamodb(item, G, defaults=config)
+                if item['Service'] == "stepfunctions":
+                    stepfunctions(item, G, defaults=config)
                 if item['Protocol'] == "iam":
                     iamTemplate = Template()
                     iamTemplate.add_version("2010-09-09")

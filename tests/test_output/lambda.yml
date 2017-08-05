@@ -101,7 +101,7 @@ Resources:
       Runtime: nodejs6.10
       Timeout: '10'
     Type: AWS::Lambda::Function
-  abcdefg127f25ac7bbac24cd6b20a1783145b5e38Deployment:
+  abcdefg1233b762e498794e8c9cb1367c4c927890Deployment:
     DependsOn: [testGETMethod]
     Properties:
       RestApiId: abcdefg12
@@ -152,7 +152,7 @@ Resources:
       PathPart: test
       RestApiId: !Ref 'ApiNameapi'
     Type: AWS::ApiGateway::Resource
-  troposphereRefobjectat0x03A06750bd81fc31856741a7b2b38052907d77f9Deployment:
+  troposphereRefobjectat0x110f10e507f471f90f03144589ceb143c87ae3d63Deployment:
     DependsOn: [testGETMethod]
     Properties:
       RestApiId: !Ref 'ApiNameapi'

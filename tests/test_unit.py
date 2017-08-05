@@ -13,6 +13,5 @@ class TestUnit(unittest.TestCase):
             except Exception, e:
                 print(e)
 
-
 if __name__ == '__main__':
     unittest.main()

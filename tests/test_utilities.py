@@ -5,6 +5,7 @@ from s3 import s3
 from kms import kms
 from iam import iam
 from dynamodb import dynamodb
+from stepfunctions import stepfunctions
 from troposphere import Template
 from cfn_flip import flip, to_yaml
 import ConfigParser
@@ -103,6 +104,8 @@ def runTest(services, runWIthDefaultConfig=False):
             kms(item, G, defaults=config)
         if item['Service'] == "dynamodb":
             dynamodb(item, G, defaults=config)
+        if item['Service'] == "stepfunctions":
+            stepfunctions(item, G, defaults=config)
         if item['Service'] == "iam":
             iamTemplate = Template()
             iamTemplate.add_version("2010-09-09")
