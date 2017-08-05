@@ -246,9 +246,9 @@ def awslambda(item, template, defaults, G):
                         SourceArn=GetAtt(rule, "Arn"),
                         FunctionName=Ref(func)
                     )
-                    utilities.mergeNode(G, id=pollerId, resource=rule, image=lambdaImg,
+                    utilities.mergeNode(G, id=pollerId, resource=rule, image=cloudwatchImg,
                                         name=pollerId)
-                    utilities.mergeNode(G, id=permissionId, resource=permission, image=lambdaImg,
+                    utilities.mergeNode(G, id=permissionId, resource=permission, image=cloudwatchImg,
                                         name=pollerId + ' InvokePermission')
                     G.add_edge(pollerId, graphFunctionId)
                     G.add_edge(permissionId, graphFunctionId)
