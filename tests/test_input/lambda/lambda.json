@@ -1,6 +1,7 @@
 {
   "ApplicationName": "Test",
-  "Functions": [{
+  "Functions": [
+    {
       "FunctionName": "AwesomeFunction",
       "Role": "TestRoleName"
     },
@@ -40,14 +41,17 @@
           "VARIABLE_2": "Another environment variable"
         }
       },
-      "Poller": [{
-        "Cron": "0 12 * * ? *",
-        "Input": "{\"Test1\": \"Test Input 1\", \"Test2\": \"Test Input 2\"}"
-      }, {
-        "Name": "TestPollerName",
-        "Rate": "5 minutes",
-        "Input": "{\"Test3\": \"Test Input 3\", \"Test4\": \"Test Input 4\"}"
-      }],
+      "Poller": [
+        {
+          "Cron": "0 12 * * ? *",
+          "Input": "{\"Test1\": \"Test Input 1\", \"Test2\": \"Test Input 2\"}"
+        },
+        {
+          "Name": "TestPollerName",
+          "Rate": "5 minutes",
+          "Input": "{\"Test3\": \"Test Input 3\", \"Test4\": \"Test Input 4\"}"
+        }
+      ],
       "Handler": "index.handler",
       "MemorySize": 256,
       "Role": "TestRoleName",
@@ -78,7 +82,46 @@
     {
       "Api": {
         "HttpMethod": "GET",
+        "Cors": true,
         "Path": "test2",
+        "RestApi": {
+          "Id": "abcdefg12",
+          "ResourceId": "12345678ab"
+        },
+        "StageName": "dev",
+        "UrlQueryStringParameters": [
+          "param1",
+          "param2",
+          "param3"
+        ]
+      },
+      "FunctionName": "AwesomeFunction",
+      "Description": "Attaches to existing RestApi",
+      "Role": "TestRoleName"
+    },
+    {
+      "Api": {
+        "HttpMethod": "GET",
+        "Path": "test3",
+        "Cors": true,
+        "RestApi": {
+          "Name": "ApiName"
+        },
+        "StageName": "dev",
+        "UrlQueryStringParameters": [
+          "param1",
+          "param2",
+          "param3"
+        ]
+      },
+      "FunctionName": "AwesomeFunction",
+      "Description": "Creates a new RestApi",
+      "Role": "TestRoleName"
+    },
+    {
+      "Api": {
+        "HttpMethod": "GET",
+        "Path": "test4",
         "RestApi": {
           "Name": "ApiName"
         },

@@ -10,14 +10,16 @@ from distutils.util import strtobool
 import uuid
 import re
 import utilities
-import json
-import matplotlib.image as mpimg
 import os
 
 lambdaImg = './AWS_Simple_Icons/Compute/Compute_AWSLambda.png'
 apiGatewayImg = './AWS_Simple_Icons/Application Services/ApplicationServices_AmazonAPIGateway.png'
 cloudwatchImg = './AWS_Simple_Icons/Management Tools/ManagementTools_AmazonCloudWatch_eventtimebased.png'
 regex = re.compile('[^a-zA-Z0-9]')
+apiGatewayMap = {
+    'RestApiId': {},
+    'Name': {}
+}
 
 
 def getRequestTemplate(params):
@@ -318,9 +320,11 @@ def awslambda(item, template, defaults, G):
 
                     apiId = Ref(restApi)
                     resourceId = GetAtt(restApi, "RootResourceId")
+                    deploymentType = 'Name'
                 else:
                     apiId = str(function['Api']['RestApi']['Id'])
                     resourceId = str(function['Api']['RestApi']["ResourceId"])
+                    deploymentType = 'RestApiId'
 
                 apiResource = None
                 pathToMethod = ""
@@ -404,19 +408,25 @@ def awslambda(item, template, defaults, G):
                 utilities.mergeNode(G, id=methodId, resource=method, image=apiGatewayImg,
                                     name='Te' + '-' + str(parameters['HttpMethod']).upper())
 
-                # Requires uuid to signal a change for CloudFormation to update the stack
-                deploymentId = regex.sub("", str(apiId) + str(uuid.uuid4())) + 'Deployment'
-                deploymentParameters = {
-                    "RestApiId": apiId,
-                    "StageName": parameters['StageName'],
-                    "Description": parameters['Description'] if 'Description' in parameters else None,
-                }
-                deployment = Deployment(
-                    deploymentId,
-                    **dict((k, v) for k, v in deploymentParameters.iteritems() if v is not None)
-                )
-                utilities.mergeNode(G, id=deploymentId, resource=deployment, image=apiGatewayImg,
-                                    name=parameters['StageName'] + "-Deployment")
+                # Find any other associated lambdas with the same API to prevent multiple deployment objects
+                mapId = '{0}{1}'.format(restApiId if restApiId is not None else apiId, parameters['StageName'])
+                if mapId in apiGatewayMap[deploymentType]:
+                    deploymentId = apiGatewayMap[deploymentType][mapId]
+                else:
+                    # Requires uuid to signal a change for CloudFormation to update the stack
+                    deploymentId = regex.sub("", str(apiId) + str(uuid.uuid4())) + 'Deployment'
+                    deploymentParameters = {
+                        "RestApiId": apiId,
+                        "StageName": parameters['StageName'],
+                        "Description": parameters['Description'] if 'Description' in parameters else None,
+                    }
+                    deployment = Deployment(
+                        deploymentId,
+                        **dict((k, v) for k, v in deploymentParameters.iteritems() if v is not None)
+                    )
+                    utilities.mergeNode(G, id=deploymentId, resource=deployment, image=apiGatewayImg,
+                                        name=parameters['StageName'] + "-Deployment")
+                    apiGatewayMap[deploymentType][mapId] = deploymentId
 
                 permissionId = regex.sub("", parameters['Path']) + parameters['HttpMethod'] + 'Path' + 'Permission'
                 permission = Permission(
