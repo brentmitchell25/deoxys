@@ -87,13 +87,17 @@ def runTest(services, runWIthDefaultConfig=False):
 
     G = nx.DiGraph()
     retVal = {}
+    apiGatewayMap = {
+        'RestApiId': {},
+        'Name': {}
+    }
     for item in services['Items']:
         if 'Protocol' in item:
             item['Service'] = item['Protocol']
         else:
             item['Protocol'] = item['Service']
         if item['Service'] == "lambda":
-            awslambda(item, t, defaults=config, G=G)
+            awslambda(item, t, defaults=config, G=G, apiGatewayMap=apiGatewayMap)
         if item['Service'] == "sqs":
             sqs(item, G, defaults=config)
         if item['Service'] == "sns":
