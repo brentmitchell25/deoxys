@@ -54,6 +54,10 @@ def handler(event, context):
     G = nx.DiGraph()
     iamTemplate = None
     retVal = []
+    apiGatewayMap = {
+        'RestApiId': {},
+        'Name': {}
+    }
     for record in event['Records']:
         print(record)
         t.add_version("2010-09-09")
@@ -73,7 +77,7 @@ def handler(event, context):
                 else:
                     item['Protocol'] = item['Service']
                 if item['Service'] == "lambda":
-                    awslambda(item, t, defaults=config, G=G)
+                    awslambda(item, t, defaults=config, G=G, apiGatewayMap=apiGatewayMap)
                 if item['Service'] == "sqs":
                     sqs(item, G, defaults=config)
                 if item['Service'] == "sns":
@@ -123,7 +127,8 @@ def handler(event, context):
 
             with open(config.get('DEFAULT', 'WriteFileDirectory') + applicationName + ".zip", "rb") as myzip:
                 s3Client.put_object(
-                    Bucket=os.environ['CLOUDFORMATION_BUCKET'] if os.getenv('CLOUDFORMATION_BUCKET') else config.get('DEFAULT', 'CloudformationBucket'),
+                    Bucket=os.environ['CLOUDFORMATION_BUCKET'] if os.getenv('CLOUDFORMATION_BUCKET') else config.get(
+                        'DEFAULT', 'CloudformationBucket'),
                     Key=applicationName + "/" + applicationName + ".zip",
                     Body=myzip.read()
                 )

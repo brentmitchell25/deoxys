@@ -16,10 +16,6 @@ lambdaImg = './AWS_Simple_Icons/Compute/Compute_AWSLambda.png'
 apiGatewayImg = './AWS_Simple_Icons/Application Services/ApplicationServices_AmazonAPIGateway.png'
 cloudwatchImg = './AWS_Simple_Icons/Management Tools/ManagementTools_AmazonCloudWatch_eventtimebased.png'
 regex = re.compile('[^a-zA-Z0-9]')
-apiGatewayMap = {
-    'RestApiId': {},
-    'Name': {}
-}
 
 
 def getRequestTemplate(params):
@@ -218,7 +214,7 @@ def getMethodResponse(parameters, isOptionMethod=False):
     )
 
 
-def awslambda(item, template, defaults, G):
+def awslambda(item, template, defaults, G, apiGatewayMap):
     if 'Functions' in item:
         for function in item['Functions']:
             functionId = regex.sub("", function['FunctionName'])
