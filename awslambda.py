@@ -64,7 +64,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isOptionsMethod=Fals
                 "application/json": '{\"statusCode\": 200}'
             },
         }
-    elif str(params['Asynchronous']).lower() == 'true' and str(params['HttpMethod']).upper() == 'GET':
+    elif str(params['Asynchronous']).lower() == 'true' and params['UrlQueryStringParameters'] is not None:
         integrationParameters = {
             'Type': "AWS",
             'Credentials': Join("", ["arn:aws:iam::", Ref("AWS::AccountId"), ":", "role/",
@@ -75,9 +75,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isOptionsMethod=Fals
             'IntegrationResponses': [
                 getIntegrationResponse(params=params)
             ],
-            'RequestTemplates': getRequestTemplate(
-                params['UrlQueryStringParameters']) if str(
-                params['HttpMethod']).upper() == 'GET' else None,
+            'RequestTemplates': getRequestTemplate(params['UrlQueryStringParameters']),
             'RequestParameters': {
                 "integration.request.header.X-Amz-Invocation-Type": '\'Event\''
             }
@@ -98,7 +96,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isOptionsMethod=Fals
                 "integration.request.header.X-Amz-Invocation-Type": '\'Event\''
             }
         }
-    elif str(params['HttpMethod']).upper() == 'GET':
+    elif params['UrlQueryStringParameters'] is not None:
         integrationParameters = {
             'Type': "AWS",
             'IntegrationHttpMethod': "POST",
@@ -106,9 +104,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isOptionsMethod=Fals
                         ["arn:aws:apigateway:", Ref("AWS::Region"),
                          ":lambda:path/2015-03-31/functions/",
                          GetAtt(func, "Arn"), "/invocations"]),
-            'RequestTemplates': getRequestTemplate(
-                params['UrlQueryStringParameters']) if str(
-                params['HttpMethod']).upper() == 'GET' else None,
+            'RequestTemplates': getRequestTemplate(params['UrlQueryStringParameters']),
             'IntegrationResponses': [
                 getIntegrationResponse(params=params)
             ],
@@ -390,7 +386,7 @@ def awslambda(item, template, defaults, G, apiGatewayMap):
                              bool(strtobool(defaults.get('DEFAULT', 'QueryStringRequired')))
                              if 'Required' not in v else bool(strtobool(str(v))))
                             for v in parameters['UrlQueryStringParameters'])
-                        if parameters['UrlQueryStringParameters'] != None else None,
+                        if parameters['UrlQueryStringParameters'] is not None else None,
                         "RequestTemplates": parameters['RequestParameters'],
                         "MethodResponses": [
                             getMethodResponse(parameters=parameters)

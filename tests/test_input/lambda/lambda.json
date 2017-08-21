@@ -101,6 +101,26 @@
     },
     {
       "Api": {
+        "HttpMethod": "Delete",
+        "Cors": true,
+        "Path": "test2",
+        "RestApi": {
+          "Id": "abcdefg12",
+          "ResourceId": "12345678ab"
+        },
+        "StageName": "dev",
+        "UrlQueryStringParameters": [
+          "param1",
+          "param2",
+          "param3"
+        ]
+      },
+      "FunctionName": "AwesomeFunction",
+      "Description": "Attaches to existing RestApi",
+      "Role": "TestRoleName"
+    },
+    {
+      "Api": {
         "HttpMethod": "GET",
         "Path": "test3",
         "Cors": true,

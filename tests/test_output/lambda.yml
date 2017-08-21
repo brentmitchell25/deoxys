@@ -101,8 +101,8 @@ Resources:
       Runtime: nodejs6.10
       Timeout: '10'
     Type: AWS::Lambda::Function
-  abcdefg12a69bd03c0da54ab4bb710bd0d7f7aaf2Deployment:
-    DependsOn: [test2Cors, test2GETMethod, testGETMethod, testCors]
+  abcdefg125134465f170948eeb6323c6dfd64f159Deployment:
+    DependsOn: [test2Cors, test2DeleteMethod, test2GETMethod, testGETMethod, testCors]
     Properties:
       RestApiId: abcdefg12
       StageName: dev
@@ -131,6 +131,48 @@ Resources:
       ResourceId: !Ref 'test2Path'
       RestApiId: abcdefg12
     Type: AWS::ApiGateway::Method
+  test2DeleteMethod:
+    DependsOn: [test2Path]
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: DELETE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: '''*'''
+          StatusCode: '200'
+        RequestTemplates:
+          application/json: '{
+
+            "param1": "$input.params(''param1'')",
+
+            "param2": "$input.params(''param2'')",
+
+            "param3": "$input.params(''param3'')"
+
+            }'
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AwesomeFunctionlambda.Arn}/invocations'
+      MethodResponses:
+      - ResponseParameters:
+          method.response.header.Access-Control-Allow-Origin: true
+        StatusCode: '200'
+      RequestParameters:
+        method.request.querystring.param1: false
+        method.request.querystring.param2: false
+        method.request.querystring.param3: false
+      ResourceId: !Ref 'test2Path'
+      RestApiId: abcdefg12
+    Type: AWS::ApiGateway::Method
+  test2DeletePathPermission:
+    DependsOn: [test2DeleteMethod, AwesomeFunctionlambda]
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref 'AwesomeFunctionlambda'
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:abcdefg12/*/Delete/test2'
+    Type: AWS::Lambda::Permission
   test2GETMethod:
     DependsOn: [test2Path]
     Properties:
@@ -369,7 +411,7 @@ Resources:
       PathPart: test
       RestApiId: abcdefg12
     Type: AWS::ApiGateway::Resource
-  troposphereRefobjectat0x039EC2B0d6e1695079954f5fbbdc79297d8c7a44Deployment:
+  troposphereRefobjectat0x03AC6C70a591bf7b14be4487bd85a6f266d0fc2aDeployment:
     DependsOn: [test4GETMethod, test3GETMethod, test3Cors]
     Properties:
       RestApiId: !Ref 'ApiNameapi'
