@@ -50,8 +50,7 @@ def stepfunctions(item, G, defaults):
                                     name=parameters['Activity']['Name'])
 
             if parameters['StateMachine'] is not None:
-                stateMachineId = '{0}{1}'.format(regex.sub("", str(uuid.uuid4())), 'StateMachine')
-                print stateMachineId
+                stateMachineId = '{0}{1}'.format(regex.sub("", stepFunction['StateMachine']['Name']), 'StateMachine')
                 stateMachine = StateMachine(
                     stateMachineId,
                     **dict((k, v) for k, v in parameters['StateMachine'].iteritems() if v is not None)

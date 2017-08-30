@@ -1,13 +1,13 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Resources:
-  2590c8b3a0024697bb02acb7a95c042bStateMachine:
+  TestActivityActivity:
+    Properties:
+      Name: TestActivity
+    Type: AWS::StepFunctions::Activity
+  TestStateMachineStateMachine:
     Properties:
       DefinitionString: '{"StartAt": "HelloWorld", "States": {"HelloWorld": {"Type":
         "Task", "Resource": "arn:aws:lambda:us-east-1:111122223333:function:HelloFunction",
         "End": true}}}'
       RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/TestRole'
     Type: AWS::StepFunctions::StateMachine
-  TestActivityActivity:
-    Properties:
-      Name: TestActivity
-    Type: AWS::StepFunctions::Activity
