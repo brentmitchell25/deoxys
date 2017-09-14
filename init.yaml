@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  CloudformationBucket: {Type: String}
+  LambdaSubnetIds: {Type: String}
+  LambdaSecurityGroups: {Type: String}
+Resources:
+  CloudformationGeneratorRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [lambda.amazonaws.com]
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action: ['s3:PutObject']
+            Effect: Allow
+            Resource: ['arn:aws:s3:::fhr-cloudformation*']
+        PolicyName: S3
+      - PolicyDocument:
+          Statement:
+          - Action: ['dynamodb:Query', 'dynamodb:GetRecords', 'dynamodb:GetShardIterator',
+              'dynamodb:DescribeStream', 'dynamodb:ListStreams']
+            Effect: Allow
+            Resource: [!Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/Application']
+        PolicyName: dynamo-query
+      - PolicyDocument:
+          Statement:
+          - Action: ['dynamodb:GetRecords', 'dynamodb:GetShardIterator', 'dynamodb:DescribeStream',
+              'dynamodb:ListStreams']
+            Effect: Allow
+            Resource: [!Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/Application/stream/*']
+        PolicyName: dynamo-stream
+      - PolicyDocument:
+          Statement:
+          - Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents']
+            Effect: Allow
+            Resource: ['*']
+        PolicyName: Logs
+      RoleName: CloudformationGenerator
+    Type: AWS::IAM::Role
+  Applicationdynamodb:
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: ApplicationName
+        AttributeType: S
+      - AttributeName: Service
+        AttributeType: S
+      KeySchema:
+      - AttributeName: ApplicationName
+        KeyType: HASH
+      - AttributeName: Service
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TableName: Application
+    Type: AWS::DynamoDB::Table
+  CloudformationGeneratorApplicationdynamodbEventSourceMapping:
+    DependsOn: [CloudformationGeneratorlambda, Applicationdynamodb]
+    Properties:
+      EventSourceArn: !GetAtt [Applicationdynamodb, StreamArn]
+      FunctionName: CloudformationGenerator
+      StartingPosition: LATEST
+    Type: AWS::Lambda::EventSourceMapping
+  CloudformationGeneratorlambda:
+    Properties:
+      Code:
+        ZipFile: 'exports.handler = (event, context, callback) => {
+
+          console.log(JSON.stringify(event));
+
+          callback(null, "some success message");
+
+          };'
+      Environment:
+        Variables:
+          LAMBDA_SECURITY_GROUPS: !Ref LambdaSubnetIds
+          LAMBDA_SUBNET_IDS: !Ref LambdaSubnetIds
+      FunctionName: CloudformationGenerator
+      Handler: index.handler
+      MemorySize: 128
+      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/CloudformationGenerator'
+      Runtime: python2.7
+      Timeout: '10'
+    Type: AWS::Lambda::Function
+  fhrcloudformationdevbucket:
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref CloudformationBucket
+    Type: AWS::S3::Bucket

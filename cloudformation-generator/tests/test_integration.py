@@ -5,7 +5,7 @@ from test_utilities import runTest
 dynamodbClient = boto3.resource('dynamodb')
 s3Client = boto3.client('s3')
 
-applicationName = "APP-NAME"
+applicationName = "ASH-INVTXN-dev"
 services = dynamodbClient.Table('Application').query(
     KeyConditionExpression=Key('ApplicationName').eq(applicationName)
 )
