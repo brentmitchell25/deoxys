@@ -41,7 +41,7 @@ def sqs(item, G, defaults):
             queueId = regex.sub('', queue['QueueName']) + item['Protocol']
             resource = Queue(
                 queueId,
-                **dict((k, v) for k, v in parameters.iteritems() if v is not None)
+                **dict((k, v) for k, v in parameters.items() if v is not None)
             )
             utilities.mergeNode(G, id=queueId, resource=resource, image=sqsImg,
                                 name=queue['QueueName'])

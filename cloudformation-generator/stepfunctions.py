@@ -21,6 +21,7 @@ def getStateMachine(stepFunction):
                              "AWS::AccountId"),
                          ":role/",
                          stepFunction['StateMachine']['Role']]),
+        'StateMachineName': stepFunction['StateMachine']['StateMachineName'] if 'StateMachineName' in  stepFunction['StateMachine'] else None
     }
 
 
@@ -44,7 +45,7 @@ def stepfunctions(item, G, defaults):
                 activityId = '{0}{1}'.format(regex.sub("", parameters['Activity']['Name']), 'Activity')
                 activity = Activity(
                     activityId,
-                    **dict((k, v) for k, v in parameters['Activity'].iteritems() if v is not None)
+                    **dict((k, v) for k, v in parameters['Activity'].items() if v is not None)
                 )
                 utilities.mergeNode(G, id=activityId, resource=activity, image=stepFunctionsImg,
                                     name=parameters['Activity']['Name'])
@@ -53,7 +54,7 @@ def stepfunctions(item, G, defaults):
                 stateMachineId = '{0}{1}'.format(regex.sub("", stepFunction['StateMachine']['Name']), 'StateMachine')
                 stateMachine = StateMachine(
                     stateMachineId,
-                    **dict((k, v) for k, v in parameters['StateMachine'].iteritems() if v is not None)
+                    **dict((k, v) for k, v in parameters['StateMachine'].items() if v is not None)
                 )
                 utilities.mergeNode(G, id=stateMachineId, resource=stateMachine, image=stepFunctionsImg,
                                     name='StateMachine')

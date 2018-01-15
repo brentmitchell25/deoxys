@@ -50,7 +50,7 @@ def getIntegrationResponse(params, isOptionsMethod=False):
             integrationResponseParameters['ResponseParameters'] = {
                 "method.response.header.Access-Control-Allow-Origin": '\'*\'',
             }
-    return IntegrationResponse(**dict((k, v) for k, v in integrationResponseParameters.iteritems() if v is not None))
+    return IntegrationResponse(**dict((k, v) for k, v in integrationResponseParameters.items() if v is not None))
 
 
 def getIntegration(params, isAsynchronous=False, func=None, isOptionsMethod=False):
@@ -124,7 +124,7 @@ def getIntegration(params, isAsynchronous=False, func=None, isOptionsMethod=Fals
         }
 
     return Integration(
-        **dict((k, v) for k, v in integrationParameters.iteritems() if v is not None)
+        **dict((k, v) for k, v in integrationParameters.items() if v is not None)
     )
 
 
@@ -173,7 +173,7 @@ def getTarget(poller, func, functionId):
         "InputPath": poller['InputPath'] if 'InputPath' in poller else None
     }
     return Target(
-        **dict((k, v) for k, v in params.iteritems() if v is not None)
+        **dict((k, v) for k, v in params.items() if v is not None)
     )
 
 
@@ -206,7 +206,7 @@ def getMethodResponse(parameters, isOptionMethod=False):
                 'method.response.header.Access-Control-Allow-Origin': True,
             }
     return MethodResponse(
-        **dict((k, v) for k, v in methodResponseParameters.iteritems() if v is not None)
+        **dict((k, v) for k, v in methodResponseParameters.items() if v is not None)
     )
 
 
@@ -240,7 +240,7 @@ def awslambda(item, template, defaults, G, apiGatewayMap):
             }
             func = Function(
                 functionId + item['Protocol'],
-                **dict((k, v) for k, v in parameters.iteritems() if v is not None)
+                **dict((k, v) for k, v in parameters.items() if v is not None)
             )
 
             graphFunctionId = functionId + item['Protocol']
@@ -331,7 +331,7 @@ def awslambda(item, template, defaults, G, apiGatewayMap):
                         }
                         apiResource = Resource(
                             apiResourceId,
-                            **dict((k, v) for k, v in apiParameters.iteritems() if v is not None)
+                            **dict((k, v) for k, v in apiParameters.items() if v is not None)
                         )
                         utilities.mergeNode(G, id=apiResourceId, resource=apiResource, image=apiGatewayImg,
                                             name=regex.sub("", path))
@@ -357,7 +357,7 @@ def awslambda(item, template, defaults, G, apiGatewayMap):
                     corsMethodId = regex.sub("", pathToMethod) + 'Cors'
                     corsMethod = Method(
                         corsMethodId,
-                        **dict((k, v) for k, v in corsMethodParameters.iteritems() if v is not None)
+                        **dict((k, v) for k, v in corsMethodParameters.items() if v is not None)
                     )
 
                     utilities.mergeNode(G, id=corsMethodId, resource=corsMethod, image=apiGatewayImg,
@@ -395,7 +395,7 @@ def awslambda(item, template, defaults, G, apiGatewayMap):
                 methodId = regex.sub("", pathToMethod + parameters['HttpMethod']) + 'Method'
                 method = Method(
                     methodId,
-                    **dict((k, v) for k, v in methodParameters.iteritems() if v is not None)
+                    **dict((k, v) for k, v in methodParameters.items() if v is not None)
                 )
                 utilities.mergeNode(G, id=methodId, resource=method, image=apiGatewayImg,
                                     name='Te' + '-' + str(parameters['HttpMethod']).upper())
@@ -414,7 +414,7 @@ def awslambda(item, template, defaults, G, apiGatewayMap):
                     }
                     deployment = Deployment(
                         deploymentId,
-                        **dict((k, v) for k, v in deploymentParameters.iteritems() if v is not None)
+                        **dict((k, v) for k, v in deploymentParameters.items() if v is not None)
                     )
                     utilities.mergeNode(G, id=deploymentId, resource=deployment, image=apiGatewayImg,
                                         name=parameters['StageName'] + "-Deployment")

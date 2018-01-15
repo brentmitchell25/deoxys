@@ -155,6 +155,21 @@
       "FunctionName": "AwesomeFunction",
       "Description": "Creates a new RestApi",
       "Role": "TestRoleName"
+    },
+    {
+      "Api": {
+        "HttpMethod": "POST",
+        "Path": "test5",
+        "Asynchronous": true,
+        "RestApi": {
+          "Id": "abcdefg12",
+          "ResourceId": "12345678ab"
+        },
+        "StageName": "dev",
+        "Role": "TestRoleName"
+      },
+      "FunctionName": "AwesomeFunctionAsynchrounous",
+      "Role": "TestRoleName"
     }
   ],
   "Service": "lambda"

@@ -164,7 +164,7 @@ def handler(event, context):
                 'applicationName': applicationName,
             })
 
-        except Exception, e:
+        except Exception as e:
             print("Error: %s" % e)
             traceback.print_exc()
             retVal.append({

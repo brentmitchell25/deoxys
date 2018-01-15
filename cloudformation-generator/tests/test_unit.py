@@ -10,7 +10,7 @@ class TestUnit(unittest.TestCase):
             ymlOutput = testYaml(ymlInput, inputDirectoryName=directory)
             try:
                 self.assertEqual(ymlInput, ymlOutput, msg='{}\n{}'.format(directory,unidiff_output(ymlOutput, ymlInput)))
-            except Exception, e:
+            except Exception as e:
                 print(e)
 
 if __name__ == '__main__':

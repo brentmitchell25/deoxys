@@ -1,3 +1,5 @@
+import sys
+sys.path.append("..")
 from awslambda import awslambda
 from sqs import sqs
 from sns import sns
@@ -8,7 +10,7 @@ from dynamodb import dynamodb
 from stepfunctions import stepfunctions
 from troposphere import Template
 from cfn_flip import flip, to_yaml
-import ConfigParser
+import configparser
 import re
 import networkx as nx
 import glob, os
@@ -63,7 +65,7 @@ def unidiff_output(expected, actual):
 
 def dependsOn(node, graph):
     retVal = []
-    for u, v in graph.edges_iter():
+    for u, v in graph.edges():
         if node == u:
             retVal.append(regex.sub("", v))
     return retVal
@@ -76,7 +78,7 @@ def writeTemplate(template, graph):
         template.add_resource(graph.node[node]['resource'])
 
 def runTest(services, runWIthDefaultConfig=False):
-    config = ConfigParser.RawConfigParser()
+    config = configparser.RawConfigParser()
     if os.path.exists("../defaults.ini") and runWIthDefaultConfig:
         config.read('../defaults.ini')
     else:
@@ -119,6 +121,5 @@ def runTest(services, runWIthDefaultConfig=False):
             retVal['iam'] = to_yaml(iamTemplate.to_json(), clean_up=True)
 
     writeTemplate(t, G)
-
     retVal['services'] = to_yaml(t.to_json(), clean_up=True)
     return retVal

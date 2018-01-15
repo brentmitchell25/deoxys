@@ -20,7 +20,7 @@ def s3(item, G, defaults):
             bucketId = regex.sub("", bucket['BucketName']) + 'bucket'
             bucketRes = Bucket(
                 bucketId,
-                **dict((k, v) for k, v in parameters.iteritems() if v is not None)
+                **dict((k, v) for k, v in parameters.items() if v is not None)
             )
             utilities.mergeNode(G, id=bucketId, resource=bucketRes, image=s3Img,
                                 name=bucket['BucketName'])

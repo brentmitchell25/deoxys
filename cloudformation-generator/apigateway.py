@@ -19,6 +19,6 @@ def apigateway(item, template, defaults):
 
             template.add_resource(RestApi(
                 regex.sub("", api['Name']) + 'api',
-                **dict((k, v) for k, v in parameters.iteritems() if v is not None)
+                **dict((k, v) for k, v in parameters.items() if v is not None)
             ))
     return template

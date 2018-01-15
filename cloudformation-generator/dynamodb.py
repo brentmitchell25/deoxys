@@ -118,7 +118,7 @@ def dynamodb(item, G, defaults):
             tableId = regex.sub("", table['TableName']) + item['Protocol']
             tableResource = Table(
                 tableId,
-                **dict((k, v) for k, v in parameters.iteritems() if v is not None)
+                **dict((k, v) for k, v in parameters.items() if v is not None)
             )
             utilities.mergeNode(G, id=tableId, resource=tableResource, image=dynamodbImg,
                                 name=table["TableName"])
@@ -139,7 +139,7 @@ def dynamodb(item, G, defaults):
                         "FunctionName"] if "FunctionName" in trigger else trigger) + tableId + "EventSourceMapping"
                     eventSourceMapping = EventSourceMapping(
                         eventSourceMappingId,
-                        **dict((k, v) for k, v in parameters.iteritems() if v is not None)
+                        **dict((k, v) for k, v in parameters.items() if v is not None)
                     )
                     utilities.mergeNode(G, id=eventSourceMappingId, resource=eventSourceMapping, image=lambdaImg,
                                         name="EventSourceMapping")

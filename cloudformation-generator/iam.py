@@ -69,7 +69,7 @@ def getStatement(statement, G, roleId):
         "Resource": [resourceArn(resource) for resource in
                      statement["Resources"]] if "Resources" in statement else None
     }
-    return Statement(**dict((k, v) for k, v in parameters.iteritems() if v is not None))
+    return Statement(**dict((k, v) for k, v in parameters.items() if v is not None))
 
 def policy(statements, G, roleId):
     return Policy(
@@ -97,7 +97,7 @@ def iam(item, G, defaults):
             }
             roleResource = Role(
                 roleId,
-                **dict((k, v) for k, v in parameters.iteritems() if v is not None)
+                **dict((k, v) for k, v in parameters.items() if v is not None)
             )
             utilities.mergeNode(G, id=roleId, resource=roleResource, image=roleImg,
                                 name=role["RoleName"])
