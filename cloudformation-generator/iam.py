@@ -115,6 +115,8 @@ def iam(item, G, defaults):
             )
             utilities.mergeNode(G, id=roleId, resource=roleResource, image=roleImg,
                                 name=role["RoleName"])
+            print(role)
+            print(role['InstanceProfile'])
             if 'InstanceProfile' in role:
                 instanceProfileId = roleId + 'InstanceProfile'
                 if str(role['InstanceProfile']) == 'true':
